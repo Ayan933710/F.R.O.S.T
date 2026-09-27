@@ -1,0 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono&family=Work+Sans:wght@400;500;700;900&display=swap');
+
+/* ── ICE-NET Design Tokens (Midnight Titanium & Electric Cobalt) ── */
+:root {
+  --font-display: 'Space Grotesk', 'Inter', sans-serif;
+  --font-body: 'Work Sans', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+/* ── Animated Dashed Workflow Line ──────────────────────────────── */
+@keyframes move-line {
+  0%   { background-position: 0 0; }
+  100% { background-position: 16px 0; }
+}

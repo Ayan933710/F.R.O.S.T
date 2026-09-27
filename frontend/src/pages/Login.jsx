@@ -1,0 +1,142 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Shield, Radio, MapPin, Lock, Home } from 'lucide-react';
+
+export default function Login() {
+ const navigate = useNavigate();
+ const [role, setRole] = useState('admin');
+ const [station, setStation] = useState('maitri');
+ const [operatorId, setOperatorId] = useState('CMD-001');
+ const [passcode, setPasscode] = useState('••••••••');
+
+ const handleSubmit = (e) => {
+  e.preventDefault();
+  if (role === 'commander') {
+   localStorage.setItem('activeStation', station);
+  }
+  navigate(role === 'admin' ? '/admin' : '/commander');
+ };
+
+ return (
+  <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-6 relative">
+   {/* Return to Landing Button */}
+   <button
+    onClick={() => navigate('/')}
+    className="absolute top-6 left-6 flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors font-['Work_Sans'] cursor-pointer"
+   >
+    <Home size={20} />
+    <span>Return to Landing</span>
+   </button>
+
+   <div className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] rounded-xl p-8 w-full max-w-md shadow-2xl">
+    <h2 className="font-['Space_Grotesk'] font-bold text-[var(--accent-primary)] text-2xl mb-6 text-center tracking-wide">
+     ICE-NET SYSTEM ACCESS
+    </h2>
+
+    {/* Role Selection */}
+    <div className="flex gap-3 mb-6">
+     <button
+      type="button"
+      onClick={() => setRole('admin')}
+      className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 ${
+       role === 'admin'
+        ? 'bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--accent-primary)] text-[var(--accent-primary)]'
+        : 'border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)]'
+      }`}
+     >
+      <Shield size={18} />
+      <span>Admin Gateway</span>
+     </button>
+
+     <button
+      type="button"
+      onClick={() => setRole('commander')}
+      className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-200 ${
+       role === 'commander'
+        ? 'bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--accent-primary)] text-[var(--accent-primary)]'
+        : 'border border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)]'
+      }`}
+     >
+      <Radio size={18} />
+      <span>Base Commander</span>
+     </button>
+    </div>
+
+    {/* Station Selection (Conditional for Commander) */}
+    {role === 'commander' && (
+     <div className="mb-6">
+      <label className="flex items-center gap-2 text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-wider mb-2">
+       <MapPin size={14} className="text-[var(--accent-primary)]" />
+       Select Edge Server
+      </label>
+      <div className="grid grid-cols-3 gap-2">
+       {[
+        { id: 'maitri', label: 'Maitri' },
+        { id: 'bharati', label: 'Bharati' },
+        { id: 'himadri', label: 'Himadri' },
+       ].map((st) => (
+        <button
+         key={st.id}
+         type="button"
+         onClick={() => setStation(st.id)}
+         className={`py-2 px-3 rounded-lg text-xs font-semibold uppercase tracking-wider border transition-all duration-200 ${
+          station === st.id
+           ? 'text-[var(--accent-primary)] border-[var(--accent-primary)] bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)]'
+           : 'border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)]'
+         }`}
+        >
+         {st.label}
+        </button>
+       ))}
+      </div>
+     </div>
+    )}
+
+    {/* Credentials Form */}
+    <form onSubmit={handleSubmit}>
+     <div className="mb-4">
+      <label className="block text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-wider mb-2">
+       Operator ID
+      </label>
+      <input
+       type="text"
+       required
+       value={operatorId}
+       onChange={(e) => setOperatorId(e.target.value)}
+       placeholder="e.g. MOES-ADM-01"
+       className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded p-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors"
+      />
+     </div>
+
+     <div className="mb-6">
+      <label className="block text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-wider mb-2">
+       Passcode
+      </label>
+      <div className="relative">
+       <input
+        type="password"
+        required
+        value={passcode}
+        onChange={(e) => setPasscode(e.target.value)}
+        placeholder="Enter access passcode"
+        className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded p-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors"
+       />
+       <Lock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+      </div>
+     </div>
+
+     <button
+      type="submit"
+      className="w-full py-3 bg-gradient-to-b from-blue-500 to-blue-600 text-white font-semibold shadow-[0_0_20px_rgba(59,130,246,0.3),inset_0_1px_0_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5),inset_0_1px_0_rgba(255,255,255,0.4)] hover:from-blue-400 hover:to-blue-500 transition-all duration-300 border border-blue-400/30 font-['Space_Grotesk'] text-base tracking-wider rounded hover:opacity-90 transition-opacity font-bold flex items-center justify-center gap-2 cursor-pointer uppercase"
+     >
+      AUTHENTICATE
+     </button>
+    </form>
+
+    <p className="text-[var(--text-secondary)] text-xs text-center mt-6">
+     Encrypted Polar Relay Protocol · National Centre for Polar & Ocean Research
+    </p>
+   </div>
+  </div>
+ );
+}

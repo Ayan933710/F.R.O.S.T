@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+/* LIGHT MODE (Premium Glacier & Cobalt) */
+:root {
+  --bg-primary: #E6ECF5; /* Premium soft glacier blue-gray */
+  --bg-panel: rgba(255, 255, 255, 0.55); /* Highly translucent milky glass */
+  --bg-panel-raised: rgba(255, 255, 255, 0.85);
+  --border: rgba(59, 130, 246, 0.15); /* Soft cobalt tinted border */
+  --border-hover: rgba(59, 130, 246, 0.6);
+  --accent-primary: #3B82F6;
+  --accent-secondary: #8B5CF6;
+  --ok: #059669;
+  --critical: #E11D48;
+  --text-primary: #0B172A; /* Deep navy-slate for contrast */
+  --text-secondary: #334155; /* Slate 700 */
+  --shadow-glass: 0 8px 32px -4px rgba(30, 58, 138, 0.1); /* Soft bluish shadow */
+  --ambient-glow: radial-gradient(ellipse at top center, rgba(59, 130, 246, 0.15) 0%, #E6ECF5 70%);
+}
+
+/* DARK MODE (Midnight Titanium) */
+.dark {
+  --bg-primary: #030712;
+  --bg-panel: rgba(17, 24, 39, 0.75);
+  --bg-panel-raised: rgba(31, 41, 55, 0.85);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(59, 130, 246, 0.5);
+  --accent-primary: #3B82F6;
+  --accent-secondary: #8B5CF6;
+  --ok: #10B981;
+  --critical: #F43F5E;
+  --text-primary: #F9FAFB;
+  --text-secondary: #9CA3AF;
+  --shadow-glass: 0 8px 32px 0 rgba(0,0,0,0.5);
+  --ambient-glow: radial-gradient(ellipse at top center, rgba(30, 58, 138, 0.15) 0%, #030712 60%);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+  font-family: 'Work Sans', sans-serif;
+}
+
+html, body, #root {
+  background: var(--ambient-glow) !important;
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#root {
+  min-height: 100%;
+  width: 100%;
+}
+
+/* Universal sleek dark scrollbars across ALL browsers and elements */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) rgba(0, 0, 0, 0.4);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.4);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 0.02em;
+  font-weight: 700;
+}
+
+/* Backward-compatibility override so all previous Bebas Neue uses become clean, readable Space Grotesk */
+.font-\[\'Bebas_Neue\'\] {
+  font-family: 'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  letter-spacing: 0.02em !important;
+  font-weight: 700 !important;
+}

@@ -1,0 +1,468 @@
+import { useState, useEffect } from 'react';
+import {
+ Ship,
+ MapPin,
+ Clock,
+ Anchor,
+ Navigation,
+ Package,
+ Activity,
+ X,
+ Lock,
+ Wifi,
+ Radio,
+ Compass,
+ CheckCircle,
+} from 'lucide-react';
+import { ComposableMap, Geographies, Geography, Marker, Line } from 'react-simple-maps';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const geoUrl = 'https://unpkg.com/world-atlas@2.0.2/countries-110m.json';
+
+const shipments = [
+ {
+  vessel: 'MV Polar Endeavour',
+  cargo: 'Scientific Equipment',
+  destination: 'Bharati Station',
+  eta: '2026-10-03',
+  status: 'In Transit',
+  start: [-40, -30],
+  current: [-40, -50],
+  end: [11.8, -70.7],
+  heading: '184° S',
+  speed: '14.2 knots',
+  manifest: ['12x Medical Kits', '4x Generator Parts', '2000L Arctic Fuel'],
+ },
+ {
+  vessel: 'RSS Nansen',
+  cargo: 'Fuel & Provisions',
+  destination: 'Maitri Station',
+  eta: '2026-10-01',
+  status: 'Docked',
+  start: [18.4, -33.9],
+  current: [11.8, -70.7],
+  end: [11.8, -70.7],
+  heading: '000° Docked',
+  speed: '0.0 knots',
+  manifest: ['5000L Polar Diesel', '40x Cold Rations', '8x VHF Radios'],
+ },
+ {
+  vessel: 'ICE-9 Freighter',
+  cargo: 'Medical Supplies',
+  destination: 'Himadri Station',
+  eta: '2026-10-08',
+  status: 'Delayed',
+  start: [10.0, 54.0],
+  current: [11.9, 78.9],
+  end: [11.9, 78.9],
+  heading: '012° NNE',
+  speed: '3.1 knots (Gale Stall)',
+  manifest: [
+   '60x Emergency Trauma Packs',
+   '10x Blood Plasma Boxes',
+   '2x Defibrillator Units',
+  ],
+ },
+ {
+  vessel: 'MV Arctic Fox',
+  cargo: 'Construction Materials',
+  destination: 'Bharati Station',
+  eta: '2026-10-12',
+  status: 'In Transit',
+  start: [72.8, 19.0],
+  current: [76, -45],
+  end: [76.1, -69.4],
+  heading: '172° S',
+  speed: '16.8 knots',
+  manifest: [
+   '120x Structural Steel Girders',
+   '15x Insulated Hab Panels',
+   '500kg Fasteners',
+  ],
+ },
+];
+
+const statusStyles = {
+ 'In Transit': 'text-[var(--accent-primary)] border-[var(--accent-primary)] bg-[var(--accent-primary)]/10',
+ Docked: 'text-[var(--ok)] border-[var(--ok)] bg-[var(--ok)]/10',
+ Delayed: 'text-[var(--critical)] border-[var(--critical)] bg-[var(--critical)]/10',
+};
+
+const markerFill = (status) => {
+ if (status === 'Docked') return 'var(--ok)';
+ if (status === 'Delayed') return 'var(--critical)';
+ return 'var(--accent-primary)';
+};
+
+export default function GlobalCargoTracker() {
+ const [selectedVessel, setSelectedVessel] = useState(null);
+ const [isPinging, setIsPinging] = useState(false);
+ const [pingSuccess, setPingSuccess] = useState(false);
+
+ const handlePingAIS = () => {
+  setIsPinging(true);
+  setPingSuccess(false);
+
+  setTimeout(() => {
+   setIsPinging(false);
+   setPingSuccess(true);
+   setTimeout(() => {
+    setPingSuccess(false);
+   }, 3000);
+  }, 1500);
+ };
+
+ return (
+  <div className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] rounded-xl p-6 h-full flex flex-col relative overflow-hidden">
+   <h2 className="text-[var(--accent-primary)] font-['Space_Grotesk'] font-bold text-2xl mb-6 tracking-wide">
+    GLOBAL CARGO TRACKER
+   </h2>
+
+   {/* Summary Counters */}
+   <div className="flex gap-4 mb-6">
+    <div className="flex items-center gap-2 bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] px-4 py-2 rounded-lg border border-[var(--border)]">
+     <Ship size={16} className="text-[var(--accent-primary)]" />
+     <span className="text-[var(--text-secondary)] text-sm">
+      Active Vessels: <span className="text-[var(--text-primary)] font-bold">{shipments.length}</span>
+     </span>
+    </div>
+    <div className="flex items-center gap-2 bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] px-4 py-2 rounded-lg border border-[var(--border)]">
+     <Anchor size={16} className="text-[var(--ok)]" />
+     <span className="text-[var(--text-secondary)] text-sm">
+      Docked:{' '}
+      <span className="text-[var(--ok)] font-bold">
+       {shipments.filter((s) => s.status === 'Docked').length}
+      </span>
+     </span>
+    </div>
+    <div className="flex items-center gap-2 bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] px-4 py-2 rounded-lg border border-[var(--border)]">
+     <Clock size={16} className="text-[var(--critical)]" />
+     <span className="text-[var(--text-secondary)] text-sm">
+      Delayed:{' '}
+      <span className="text-[var(--critical)] font-bold">
+       {shipments.filter((s) => s.status === 'Delayed').length}
+      </span>
+     </span>
+    </div>
+   </div>
+
+   {/* GIS Tactical Map with Radar Sweep Effect */}
+   <div className="w-full h-[500px] mb-8 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg overflow-hidden relative">
+    {/* Subtle pulsing radial gradient simulating radar sweep */}
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+     <motion.div
+      className="w-full h-full opacity-20"
+      style={{
+       background:
+        'radial-gradient(circle at center, rgba(59, 130, 246, 0.3) 0%, rgba(59, 130, 246, 0.08) 45%, transparent 75%)',
+      }}
+      animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.3, 0.15] }}
+      transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+     />
+    </div>
+
+    <ComposableMap
+     projectionConfig={{ scale: 180 }}
+     style={{ width: '100%', height: '100%' }}
+    >
+     <Geographies geography={geoUrl}>
+      {({ geographies }) =>
+       geographies.map((geo) => (
+        <Geography
+         key={geo.rsmKey}
+         geography={geo}
+         fill="#1F2937"
+         stroke="#374151"
+         strokeWidth={0.5}
+         style={{
+          default: { outline: 'none' },
+          hover: { outline: 'none', fill: '#374151' },
+          pressed: { outline: 'none' },
+         }}
+        />
+       ))
+      }
+     </Geographies>
+
+     {/* Planned Trajectory Lines */}
+     {shipments.map((ship) => (
+      <Line
+       key={`line-${ship.vessel}`}
+       from={ship.start}
+       to={ship.end}
+       stroke="var(--text-secondary)"
+       strokeDasharray="4 4"
+       strokeWidth={1}
+      />
+     ))}
+
+     {/* Interactive Vessel Markers */}
+     {shipments.map((ship) => {
+      const isDelayed = ship.status === 'Delayed';
+
+      return (
+       <Marker
+        key={ship.vessel}
+        coordinates={ship.current}
+        onClick={() =>
+         setSelectedVessel(
+          selectedVessel?.vessel === ship.vessel ? null : ship
+         )
+        }
+        className="cursor-pointer"
+       >
+        {/* Large, forgiving hit area */}
+        <circle r={20} fill="transparent" style={{ cursor: 'pointer' }} />
+
+        {/* Pulse ring for delayed vessels */}
+        {isDelayed && (
+         <motion.circle
+          r={8}
+          fill="var(--critical)"
+          fillOpacity={0.35}
+          animate={{ r: [8, 16, 8], opacity: [0.8, 0.15, 0.8] }}
+          transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
+         />
+        )}
+
+        {/* Visual dot with hover scaling */}
+        <motion.circle
+         r={6}
+         whileHover={{ scale: 1.5 }}
+         fill={
+          ship.status === 'Docked'
+           ? 'var(--ok)'
+           : ship.status === 'Delayed'
+           ? 'var(--critical)'
+           : 'var(--accent-primary)'
+         }
+         style={{ cursor: 'pointer' }}
+        />
+
+        {/* Larger high-visibility vessel label */}
+        <text
+         textAnchor="middle"
+         y={-15}
+         style={{
+          fill: 'var(--text-primary)',
+          fontSize: '12px',
+          fontWeight: 'bold',
+          fontFamily: 'Work Sans',
+          pointerEvents: 'none',
+         }}
+        >
+         {ship.vessel}
+        </text>
+       </Marker>
+      );
+     })}
+    </ComposableMap>
+   </div>
+
+   {/* Shipments Table */}
+   <div className="flex-1 overflow-auto">
+    <table className="w-full text-left font-['Work_Sans'] text-[var(--text-primary)]">
+     <thead>
+      <tr className="text-[var(--text-secondary)] text-xs uppercase tracking-widest border-b border-[var(--border)]">
+       <th className="pb-3 pr-4">Vessel</th>
+       <th className="pb-3 pr-4">Cargo Type</th>
+       <th className="pb-3 pr-4">Destination</th>
+       <th className="pb-3 pr-4">ETA</th>
+       <th className="pb-3 text-right">Status</th>
+      </tr>
+     </thead>
+     <tbody>
+      {shipments.map((s, i) => {
+       const isSelected = selectedVessel?.vessel === s.vessel;
+       return (
+        <tr
+         key={i}
+         onClick={() => setSelectedVessel(s)}
+         className={`border-b border-[var(--border)] hover:bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] transition-colors cursor-pointer ${
+          isSelected ? 'bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] border-l-2 border-l-[var(--accent-primary)]' : ''
+         }`}
+        >
+         <td className="py-3 pr-4">
+          <div className="flex items-center gap-2">
+           <Ship size={14} className={isSelected ? 'text-[var(--accent-primary)]' : 'text-[var(--accent-primary)]'} />
+           <span className="font-medium text-sm">{s.vessel}</span>
+          </div>
+         </td>
+         <td className="py-3 pr-4 text-sm text-[var(--text-secondary)]">{s.cargo}</td>
+         <td className="py-3 pr-4 text-sm">
+          <div className="flex items-center gap-1.5">
+           <MapPin size={12} className="text-[var(--text-secondary)]" />
+           {s.destination}
+          </div>
+         </td>
+         <td className="py-3 pr-4 text-sm">
+          <div className="flex items-center gap-1.5">
+           <Clock size={12} className="text-[var(--text-secondary)]" />
+           {s.eta}
+          </div>
+         </td>
+         <td className="py-3 text-right">
+          <span
+           className={`inline-block text-xs font-semibold px-3 py-1 rounded border ${statusStyles[s.status]}`}
+          >
+           {s.status}
+          </span>
+         </td>
+        </tr>
+       );
+      })}
+     </tbody>
+    </table>
+   </div>
+
+   {/* Tactical Side-Panel Overlay */}
+   <AnimatePresence>
+    {selectedVessel && (
+     <motion.div
+      initial={{ x: '100%' }}
+      animate={{ x: 0 }}
+      exit={{ x: '100%' }}
+      transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+      className="absolute top-0 right-0 w-96 h-full bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] border-l border-[var(--border)] shadow-2xl p-6 flex flex-col z-50 overflow-y-auto"
+     >
+      {/* Panel Header */}
+      <div className="flex items-start justify-between pb-4 border-b border-[var(--border)] mb-6">
+       <div>
+        <span className="text-[10px] uppercase font-mono text-[var(--text-secondary)] tracking-widest block mb-1">
+         Tactical AIS Telemetry
+        </span>
+        <h3 className="text-[var(--accent-primary)] font-['Space_Grotesk'] font-bold text-xl tracking-wide">
+         {selectedVessel.vessel}
+        </h3>
+       </div>
+       <button
+        type="button"
+        onClick={() => setSelectedVessel(null)}
+        className="p-1 rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] transition-colors cursor-pointer"
+       >
+        <X size={18} />
+       </button>
+      </div>
+
+      {/* Status Badge & Destination */}
+      <div className="flex items-center justify-between bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] p-3 rounded-lg border border-[var(--border)] mb-6">
+       <span
+        className={`text-xs font-semibold px-3 py-1 rounded border ${statusStyles[selectedVessel.status]}`}
+       >
+        {selectedVessel.status}
+       </span>
+       <span className="text-xs text-[var(--text-secondary)] font-mono">
+        ETA: <strong className="text-[var(--text-primary)]">{selectedVessel.eta}</strong>
+       </span>
+      </div>
+
+      {/* Live Telemetry Section */}
+      <div className="mb-6">
+       <h4 className="text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-1.5">
+        <Activity size={14} className="text-[var(--accent-primary)]" />
+        Live Navigational Telemetry
+       </h4>
+
+       <div className="grid grid-cols-2 gap-3 font-['Work_Sans']">
+        <div className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] p-3 rounded-lg border border-[var(--border)]">
+         <div className="flex items-center gap-1.5 text-[var(--text-secondary)] text-[10px] uppercase mb-1">
+          <Navigation size={12} className="text-[var(--accent-primary)]" />
+          <span>Heading</span>
+         </div>
+         <p className="text-[var(--text-primary)] font-bold text-sm font-mono">
+          {selectedVessel.heading}
+         </p>
+        </div>
+
+        <div className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] p-3 rounded-lg border border-[var(--border)]">
+         <div className="flex items-center gap-1.5 text-[var(--text-secondary)] text-[10px] uppercase mb-1">
+          <Activity size={12} className="text-[var(--accent-primary)]" />
+          <span>Speed</span>
+         </div>
+         <p className="text-[var(--text-primary)] font-bold text-sm font-mono">
+          {selectedVessel.speed}
+         </p>
+        </div>
+
+        <div className="col-span-2 bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] p-3 rounded-lg border border-[var(--border)]">
+         <div className="flex items-center gap-1.5 text-[var(--text-secondary)] text-[10px] uppercase mb-1">
+          <MapPin size={12} className="text-[var(--ok)]" />
+          <span>Coordinates</span>
+         </div>
+         <p className="text-[var(--text-primary)] font-mono text-xs">
+          {selectedVessel.current[1] >= 0
+           ? `${selectedVessel.current[1]}° N`
+           : `${Math.abs(selectedVessel.current[1])}° S`}
+          ,{' '}
+          {selectedVessel.current[0] >= 0
+           ? `${selectedVessel.current[0]}° E`
+           : `${Math.abs(selectedVessel.current[0])}° W`}
+         </p>
+        </div>
+       </div>
+      </div>
+
+      {/* Simulated AIS Ping Button */}
+      <div className="mb-6">
+       <button
+        type="button"
+        onClick={handlePingAIS}
+        disabled={isPinging}
+        className={`w-full py-3 px-4 rounded-lg font-semibold text-xs tracking-wider uppercase transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+         pingSuccess
+          ? 'bg-[var(--ok)]/20 border border-[var(--ok)] text-[var(--ok)]'
+          : 'bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--accent-primary)] text-[var(--accent-primary)] hover:bg-[var(--accent-primary)] hover:text-[var(--bg-primary)]'
+        }`}
+       >
+        {isPinging ? (
+         <>
+          <Radio size={14} className="animate-spin text-[var(--accent-primary)]" />
+          <span>Pinging Satellite (AIS)...</span>
+         </>
+        ) : pingSuccess ? (
+         <>
+          <CheckCircle size={14} className="text-[var(--ok)]" />
+          <span>Ping Acknowledged (42ms ACK)</span>
+         </>
+        ) : (
+         <>
+          <Wifi size={14} />
+          <span>Ping Satellite (AIS)</span>
+         </>
+        )}
+       </button>
+      </div>
+
+      {/* Sealed Manifest Section */}
+      <div className="flex-1 flex flex-col justify-end">
+       <div className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] p-4 rounded-lg border border-[var(--border)]">
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[var(--border)]">
+         <Lock size={14} className="text-[var(--accent-primary)]" />
+         <h4 className="text-[var(--accent-primary)] text-xs font-bold uppercase tracking-wider">
+          Sealed Cargo Manifest
+         </h4>
+        </div>
+
+        <div className="space-y-2 mb-3">
+         {selectedVessel.manifest.map((item, idx) => (
+          <div
+           key={idx}
+           className="flex items-center gap-2 text-xs text-[var(--text-primary)] font-['Work_Sans']"
+          >
+           <Package size={12} className="text-[var(--accent-primary)] shrink-0" />
+           <span>{item}</span>
+          </div>
+         ))}
+        </div>
+
+        <p className="text-[var(--text-secondary)] text-[10px] font-mono border-t border-[var(--border)] pt-2">
+         🔒 Cryptographic hash verified by edge mesh
+        </p>
+       </div>
+      </div>
+     </motion.div>
+    )}
+   </AnimatePresence>
+  </div>
+ );
+}
