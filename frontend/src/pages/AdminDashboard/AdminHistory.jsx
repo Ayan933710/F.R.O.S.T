@@ -19,69 +19,80 @@ import {
 
 const initialLogs = [
  {
-  id: 'LOG-8f92a',
-  timestamp: '2026-09-26T14:32:00Z',
-  category: 'Logistics',
-  action: 'Approved 500kg Diesel Fuel transfer to Maitri Station',
+  id: 'REQ-8f92a',
+  timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+  category: 'Inventory Request',
+  action: 'Commander 1 (Bharati) requested 500 Liters of Aviation Turbine Fuel',
   severity: 'info',
   metadata: {
-   adminId: 'GOA-HQ-01',
-   ipAddress: '192.168.1.44',
+   adminId: 'Pending Review',
+   commanderId: 'CMD-BHARATI',
+   requestDetails: 'Critical supply for backup generator',
+   status: 'Pending',
    signatureHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
   },
  },
  {
-  id: 'LOG-7c42b',
-  timestamp: '2026-09-26T13:15:20Z',
-  category: 'Transport',
-  action: 'Rerouted Vessel ICE-9 Freighter to Himadri due to katabatic storm warning',
-  severity: 'warning',
+  id: 'REQ-7c42b',
+  timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+  category: 'Inventory Request',
+  action: 'Commander 2 (Maitri) requested 12 Units of Generator Bearings',
+  severity: 'info',
   metadata: {
-   adminId: 'GOA-NAV-04',
-   ipAddress: '192.168.2.18',
+   adminId: 'GOA-HQ-01',
+   commanderId: 'CMD-MAITRI',
+   requestDetails: 'Routine maintenance parts replacement',
+   status: 'Approved',
    signatureHash: '9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b',
   },
  },
  {
-  id: 'LOG-5d33c',
-  timestamp: '2026-09-26T11:48:15Z',
-  category: 'Security',
-  action: 'Granted security clearance & LoRa mesh crypto keys for Dr. Raj Patel',
-  severity: 'info',
+  id: 'EMG-5d33c',
+  timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+  category: 'Emergency SOS',
+  action: 'Commander 3 (Himadri) initiated LoRa SOS Protocol',
+  severity: 'critical',
   metadata: {
-   adminId: 'GOA-SEC-02',
-   ipAddress: '192.168.1.99',
+   adminId: 'GOA-HQ-01',
+   commanderId: 'CMD-HIMADRI',
+   requestDetails: 'Extreme katabatic storm, comms disrupted. SOS relayed via LoRa mesh.',
+   status: 'Acknowledged',
    signatureHash: '4f5e6d7c8b9a0f1e2d3c4b5a6f7e8d9c0b1a2f3e4d5c6b7a8f9e0d1c2b3a4f5e',
   },
  },
  {
-  id: 'LOG-3a21d',
-  timestamp: '2026-09-26T09:30:40Z',
-  category: 'System',
-  action: 'Automated CRDT Sync Completed · Reconciled edge delta across Maitri & Bharati',
-  severity: 'info',
+  id: 'REQ-3a21d',
+  timestamp: new Date(Date.now() - 1000 * 60 * 315).toISOString(),
+  category: 'Inventory Request',
+  action: 'Commander 1 (Bharati) requested 100 Vials of Epinephrine',
+  severity: 'warning',
   metadata: {
-   adminId: 'SYS-CRDT-DAEMON',
-   ipAddress: '10.0.4.12',
+   adminId: 'GOA-MED-04',
+   commanderId: 'CMD-BHARATI',
+   requestDetails: 'Stockpile already exceeds maximum allowed quota',
+   status: 'Denied',
    signatureHash: '8b7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b',
   },
  },
  {
-  id: 'LOG-1f04e',
-  timestamp: '2026-09-26T08:05:11Z',
-  category: 'Security',
-  action: 'Emergency override authorized: Backup diesel microgrid activated at Bharati',
-  severity: 'critical',
+  id: 'REQ-1f04e',
+  timestamp: new Date(Date.now() - 1000 * 60 * 600).toISOString(),
+  category: 'Inventory Request',
+  action: 'Commander 2 (Maitri) requested 50 Packs of Freeze-Dried Rations',
+  severity: 'info',
   metadata: {
    adminId: 'GOA-HQ-01',
-   ipAddress: '192.168.1.44',
+   commanderId: 'CMD-MAITRI',
+   requestDetails: 'Monthly ration resupply for remote expedition team',
+   status: 'Approved',
    signatureHash: '1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b',
   },
  },
 ];
 
 const categoryIcons = {
- Logistics: Box,
+ 'Inventory Request': Box,
+ 'Emergency SOS': AlertTriangle,
  Transport: Ship,
  Security: ShieldCheck,
  System: Terminal,
@@ -109,20 +120,20 @@ export default function AdminHistory() {
  const [expandedLogId, setExpandedLogId] = useState(null);
  const [exportedStatus, setExportedStatus] = useState(false);
 
- // Live Log Simulation: Generates new System log every 12 seconds
+ // Live Log Simulation: Generates new interaction log every 12 seconds
  useEffect(() => {
   const automatedActions = [
-   'Automated CRDT Sync Completed · 3 Nodes Reconciled',
-   'Air-gapped SHA-256 manifest integrity verified by edge relay',
-   'LoRa Mesh frequency shift to 868.1MHz executed across sector',
-   'High-altitude meteorological payload received and committed to ledger',
-   'Edge station Maitri NTP clock offset recalibrated to GPS PPS',
+   'Commander 1 (Bharati) requested 200 Liters of Aviation Turbine Fuel',
+   'Commander 2 (Maitri) requested 5 Units of Medical Kits',
+   'Emergency SOS acknowledged by Commander 3 (Himadri)',
+   'Admin approved 50 Packs of Freeze-Dried Rations for Commander 1',
+   'Admin denied 10 Units of Lithium Battery Packs for Commander 2 (Exceeds quota)',
   ];
 
   const interval = setInterval(() => {
    const randomAction =
     automatedActions[Math.floor(Math.random() * automatedActions.length)];
-   const randomId = 'LOG-' + Math.random().toString(36).substring(2, 7);
+   const randomId = (randomAction.includes('SOS') ? 'EMG-' : 'REQ-') + Math.random().toString(36).substring(2, 7);
    const randomHash = Array.from(crypto.getRandomValues(new Uint8Array(32)))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
@@ -130,12 +141,14 @@ export default function AdminHistory() {
    const newLog = {
     id: randomId,
     timestamp: new Date().toISOString(),
-    category: 'System',
+    category: randomAction.includes('SOS') ? 'Emergency SOS' : 'Inventory Request',
     action: randomAction,
-    severity: 'info',
+    severity: randomAction.includes('SOS') ? 'critical' : randomAction.includes('denied') ? 'warning' : 'info',
     metadata: {
-     adminId: 'SYS-CRDT-DAEMON',
-     ipAddress: '10.0.4.12',
+     adminId: randomAction.startsWith('Admin') ? 'GOA-HQ-01' : 'Pending Review',
+     commanderId: randomAction.includes('Commander 1') ? 'CMD-BHARATI' : randomAction.includes('Commander 2') ? 'CMD-MAITRI' : 'CMD-HIMADRI',
+     requestDetails: 'Auto-generated interaction payload',
+     status: randomAction.includes('SOS') ? 'Acknowledged' : randomAction.includes('approved') ? 'Approved' : randomAction.includes('denied') ? 'Denied' : 'Pending',
      signatureHash: randomHash,
     },
    };
@@ -176,7 +189,7 @@ export default function AdminHistory() {
    <div className="flex items-center justify-between mb-6 shrink-0">
     <div>
      <h2 className="text-[var(--accent-primary)] font-['Space_Grotesk'] font-bold text-2xl tracking-wide">
-      ADMIN HISTORY · CRYPTOGRAPHIC AUDIT LEDGER
+      HISTORY · CRYPTOGRAPHIC AUDIT LEDGER
      </h2>
      <p className="text-[var(--text-secondary)] text-xs font-['Work_Sans']">
       Immutable SHA-256 Action Ledger · Multi-Party Signatures · Live Automated Sync
@@ -348,21 +361,37 @@ export default function AdminHistory() {
               </span>
              </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
               <div>
                <span className="text-[var(--text-secondary)] uppercase text-[10px] block mb-0.5">
-                Operator / Origin Admin:
+                Operator / Admin ID:
                </span>
                <span className="text-[var(--text-primary)] font-bold">
-                {log.metadata.adminId}
+                {log.metadata.adminId || 'N/A'}
                </span>
               </div>
               <div>
                <span className="text-[var(--text-secondary)] uppercase text-[10px] block mb-0.5">
-                Origin IP / Node Address:
+                Commander ID:
                </span>
                <span className="text-[var(--text-primary)]">
-                {log.metadata.ipAddress}
+                {log.metadata.commanderId || 'N/A'}
+               </span>
+              </div>
+              <div>
+               <span className="text-[var(--text-secondary)] uppercase text-[10px] block mb-0.5">
+                Request Status:
+               </span>
+               <span className="text-[var(--text-primary)]">
+                {log.metadata.status || 'N/A'}
+               </span>
+              </div>
+              <div className="col-span-2 md:col-span-4 mt-2">
+               <span className="text-[var(--text-secondary)] uppercase text-[10px] block mb-0.5">
+                Details / Comments:
+               </span>
+               <span className="text-[var(--text-primary)]">
+                {log.metadata.requestDetails || 'No additional details provided.'}
                </span>
               </div>
              </div>

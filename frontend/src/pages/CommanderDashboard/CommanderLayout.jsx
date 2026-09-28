@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Routes, Route, Navigate } from 'react-router-dom';
-import { Radar, Cloud, Package, Scan, Users, History, AlertTriangle } from 'lucide-react';
+import { Radar, Cloud, Package, Scan, Users, History, AlertTriangle, User, Siren } from 'lucide-react';
 import NavigationBar from '../../components/Shared/NavigationBar';
 import LiveTelemetryRadar from './LiveTelemetryRadar';
 import WeatherAnalysis from './WeatherAnalysis';
@@ -9,6 +9,8 @@ import ArrivalCargoScanner from './ArrivalCargoScanner';
 import ScientistsRoster from './ScientistsRoster';
 import CommanderHistory from './CommanderHistory';
 import EmergencyOverlay from './EmergencyOverlay';
+import ProfileModal from './ProfileModal';
+import EmergencyModal from './EmergencyModal';
 
 const sidebarLinks = [
  { to: '/commander',      label: 'Telemetry',     icon: Radar, end: true },
@@ -40,6 +42,15 @@ function SidebarLink({ to, label, icon: Icon, end }) {
 
 export default function CommanderLayout() {
  const [isEmergencyActive, setIsEmergencyActive] = useState(false);
+ const [isProfileOpen, setIsProfileOpen] = useState(false);
+ const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false);
+ const [notification, setNotification] = useState(null);
+
+ const handleEmergencyDispatch = (data) => {
+   setIsEmergencyModalOpen(false);
+   setNotification(`EMERGENCY SENT [${data.severity}]: Notifications dispatched to remaining dashboards.`);
+   setTimeout(() => setNotification(null), 5000);
+ };
 
  return (
   <div className="h-screen w-full bg-[var(--bg-primary)] flex flex-col relative overflow-hidden">
@@ -55,14 +66,24 @@ export default function CommanderLayout() {
       <SidebarLink key={link.to} {...link} />
      ))}
 
-     {/* Debug Demo Trigger */}
-     <button
-      onClick={() => setIsEmergencyActive(true)}
-      className="mt-auto flex items-center justify-center gap-2 text-[var(--critical)] text-xs border border-[var(--critical)] p-2 rounded hover:bg-[var(--critical)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
-     >
-      <AlertTriangle size={14} />
-      Debug: Trigger LoRa SOS
-     </button>
+     {/* Bottom Buttons */}
+     <div className="mt-auto flex flex-col gap-2">
+       <button onClick={() => setIsProfileOpen(true)} className="flex items-center justify-center gap-2 text-[var(--accent-primary)] text-xs border border-[var(--accent-primary)] p-2 rounded hover:bg-[var(--accent-primary)] hover:text-white transition-colors cursor-pointer">
+         <User size={14} />
+         Profile
+       </button>
+       <button onClick={() => setIsEmergencyModalOpen(true)} className="flex items-center justify-center gap-2 text-orange-500 text-xs border border-orange-500 p-2 rounded hover:bg-orange-500 hover:text-white transition-colors cursor-pointer">
+         <Siren size={14} />
+         Emergency
+       </button>
+       <button
+        onClick={() => setIsEmergencyActive(true)}
+        className="flex items-center justify-center gap-2 text-[var(--critical)] text-xs border border-[var(--critical)] p-2 rounded hover:bg-[var(--critical)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+       >
+        <AlertTriangle size={14} />
+        Debug: Trigger LoRa SOS
+       </button>
+     </div>
     </aside>
 
     {/* Dynamic Main Content */}
@@ -82,6 +103,24 @@ export default function CommanderLayout() {
    {/* Emergency Action System Overlay */}
    {isEmergencyActive && (
     <EmergencyOverlay onClose={() => setIsEmergencyActive(false)} />
+   )}
+
+   {/* Profile Modal */}
+   <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+
+   {/* Emergency Modal */}
+   <EmergencyModal 
+     isOpen={isEmergencyModalOpen} 
+     onClose={() => setIsEmergencyModalOpen(false)} 
+     onDispatch={handleEmergencyDispatch} 
+   />
+
+   {/* Notification Toast */}
+   {notification && (
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] bg-red-600/90 backdrop-blur border border-red-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-top-5 fade-in duration-300">
+      <Siren size={20} className="animate-pulse" />
+      <span className="font-semibold text-sm tracking-wide">{notification}</span>
+    </div>
    )}
   </div>
  );

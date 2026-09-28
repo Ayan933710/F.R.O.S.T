@@ -3,15 +3,103 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Wifi, Search, Plus, Minus, AlertCircle, Send, X, Clock, CloudOff, RefreshCw, CheckCircle, XCircle, Trash2, AlertTriangle } from 'lucide-react';
 
 const mockData = [
-  { id: 1, name: 'Aviation Turbine Fuel (ATF)', category: 'FUEL', qty: 15010, unit: 'Liters' },
-  { id: 2, name: 'Epinephrine', category: 'MEDICAL', qty: 60, unit: 'Vials' },
-  { id: 3, name: 'Generator Bearings', category: 'TECHNICAL SPARES', qty: 12, unit: 'Units', warning: 'Will deplete in ≈12d — resupply in 45d' },
-  { id: 4, name: 'Freeze-Dried Rations', category: 'PERISHABLES', qty: 800, unit: 'Packs' },
-  { id: 5, name: 'Diesel (Ground Transport)', category: 'FUEL', qty: 8000, unit: 'Liters' },
-  { id: 6, name: 'Ibuprofen Tablets', category: 'MEDICAL', qty: 450, unit: 'Tabs' },
-  { id: 7, name: 'Lithium Battery Packs', category: 'TECHNICAL SPARES', qty: 45, unit: 'Units' },
-  { id: 8, name: 'Potable Water Reserves', category: 'PERISHABLES', qty: 6500, unit: 'Liters' },
+  { id: 1, name: 'Aviation Turbine Fuel (ATF)', category: 'FUEL', qty: 15010, unit: 'Liters', shelfNumber: 'TNK-01' },
+  { id: 2, name: 'Epinephrine', category: 'MEDICAL', qty: 60, unit: 'Vials', shelfNumber: 'MED-A4' },
+  { id: 3, name: 'Generator Bearings', category: 'TECHNICAL SPARES', qty: 12, unit: 'Units', warning: 'Will deplete in ≈12d — resupply in 45d', shelfNumber: 'ENG-B2' },
+  { id: 4, name: 'Freeze-Dried Rations', category: 'PERISHABLES', qty: 800, unit: 'Packs', shelfNumber: 'RTV-12' },
+  { id: 5, name: 'Diesel (Ground Transport)', category: 'FUEL', qty: 8000, unit: 'Liters', shelfNumber: 'TNK-02' },
+  { id: 6, name: 'Ibuprofen Tablets', category: 'MEDICAL', qty: 450, unit: 'Tabs', shelfNumber: 'MED-A1' },
+  { id: 7, name: 'Lithium Battery Packs', category: 'TECHNICAL SPARES', qty: 45, unit: 'Units', shelfNumber: 'ENG-C1' },
+  { id: 8, name: 'Potable Water Reserves', category: 'PERISHABLES', qty: 6500, unit: 'Liters', shelfNumber: 'TNK-03' },
 ];
+
+function InventoryCard({ item, onRemove, onAdjust }) {
+  const [draftQty, setDraftQty] = useState('');
+
+  const handleAdjustDraft = (amount) => {
+    const current = parseInt(draftQty) || 0;
+    setDraftQty((current + amount).toString());
+  };
+
+  const handleApplyAdd = () => {
+    const val = parseInt(draftQty);
+    if (!isNaN(val) && val !== 0) {
+      onAdjust(item.id, Math.abs(val));
+      setDraftQty('');
+    }
+  };
+
+  const handleApplyRemove = () => {
+    const val = parseInt(draftQty);
+    if (!isNaN(val) && val !== 0) {
+      onAdjust(item.id, -Math.abs(val));
+      setDraftQty('');
+    }
+  };
+
+  return (
+    <motion.div 
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.2 }}
+      className="bg-[var(--bg-panel)] backdrop-blur-xl border border-[var(--border)] rounded-xl p-5 shadow-[var(--shadow-glass)] flex flex-col hover:border-[var(--border-hover)] transition-colors relative group"
+    >
+      <button 
+        onClick={() => onRemove(item.id)}
+        className="absolute top-4 right-4 p-2 rounded-full bg-[var(--bg-panel-raised)] text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 transition-opacity hover:text-[var(--critical)] hover:bg-[var(--critical)]/10 z-10"
+        title="Remove Item"
+      >
+        <Trash2 size={16} />
+      </button>
+
+      <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1 leading-tight pr-8">{item.name}</h3>
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-[10px] font-bold tracking-widest text-[var(--accent-primary)] uppercase">{item.category}</span>
+        {item.shelfNumber && (
+          <span className="text-[10px] font-bold tracking-widest text-[var(--text-secondary)] border border-[var(--border)] px-1.5 py-0.5 rounded-sm uppercase">SHELF: {item.shelfNumber}</span>
+        )}
+      </div>
+      
+      <div className="flex items-baseline gap-2 mb-4">
+        <span className="text-4xl font-black font-['Space_Grotesk'] text-[var(--text-primary)] tracking-tight">
+          {item.qty.toLocaleString()}
+        </span>
+        <span className="text-sm font-medium text-[var(--text-secondary)]">{item.unit}</span>
+      </div>
+
+      {item.warning && (
+        <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded text-amber-500 text-xs font-semibold">
+          <AlertCircle size={14} />
+          {item.warning}
+        </div>
+      )}
+
+      <div className="mt-auto flex flex-col gap-3">
+        <div className="grid grid-cols-2 gap-2">
+          <button onClick={() => handleAdjustDraft(-10)} className="py-2 bg-[var(--bg-primary)] border border-[var(--border)] rounded text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--text-primary)] transition-colors">- 10</button>
+          <button onClick={() => handleAdjustDraft(10)} className="py-2 bg-[var(--bg-panel-raised)] border border-[var(--border)] rounded text-xs font-bold text-[var(--text-primary)] hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)] transition-colors">+ 10</button>
+        </div>
+        <div className="flex gap-2">
+          <input 
+            type="number" 
+            placeholder="Custom qty..." 
+            value={draftQty}
+            onChange={(e) => setDraftQty(e.target.value)}
+            className="flex-1 min-w-0 bg-[var(--bg-primary)] border border-[var(--border)] rounded px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors"
+          />
+          <button onClick={handleApplyRemove} className="px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border)] rounded text-[var(--text-secondary)] hover:text-[var(--critical)] hover:border-[var(--critical)] transition-colors shrink-0">
+            <Minus size={14} />
+          </button>
+          <button onClick={handleApplyAdd} className="px-4 py-2 bg-[var(--bg-panel-raised)] border border-[var(--border)] rounded flex items-center gap-1 text-xs font-bold text-[var(--text-primary)] hover:text-[var(--accent-primary)] hover:border-[var(--accent-primary)] transition-colors shrink-0">
+            <Plus size={14} /> Add
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function CommanderInventory() {
   const [items, setItems] = useState(mockData);
@@ -20,7 +108,7 @@ export default function CommanderInventory() {
 
   // Add Item Modal State
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
-  const [newItemData, setNewItemData] = useState({ name: '', category: 'FUEL', qty: '', unit: '', warning: '' });
+  const [newItemData, setNewItemData] = useState({ name: '', category: 'FUEL', qty: '', unit: '', warning: '', shelfNumber: '' });
 
   const handleAddItemSubmit = (e) => {
     e.preventDefault();
@@ -31,7 +119,7 @@ export default function CommanderInventory() {
     };
     setItems([newItem, ...items]);
     setIsAddItemModalOpen(false);
-    setNewItemData({ name: '', category: 'FUEL', qty: '', unit: '', warning: '' });
+    setNewItemData({ name: '', category: 'FUEL', qty: '', unit: '', warning: '', shelfNumber: '' });
   };
 
   // Delete Item State
@@ -216,63 +304,12 @@ export default function CommanderInventory() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8 shrink-0">
         <AnimatePresence>
           {filteredItems.map(item => (
-            <motion.div 
-              key={item.id}
-              layout
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className="bg-[var(--bg-panel)] backdrop-blur-xl border border-[var(--border)] rounded-xl p-5 shadow-[var(--shadow-glass)] flex flex-col hover:border-[var(--border-hover)] transition-colors relative group"
-            >
-              {/* Delete Button */}
-              <button 
-                onClick={() => handleRequestRemoveItem(item.id)}
-                className="absolute top-4 right-4 p-2 rounded-full bg-[var(--bg-panel-raised)] text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 transition-opacity hover:text-[var(--critical)] hover:bg-[var(--critical)]/10 z-10"
-                title="Remove Item"
-              >
-                <Trash2 size={16} />
-              </button>
-
-              <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1 leading-tight pr-8">{item.name}</h3>
-              <span className="text-[10px] font-bold tracking-widest text-[var(--accent-primary)] mb-4">{item.category}</span>
-              
-              <div className="flex items-baseline gap-2 mb-4">
-                <span className="text-4xl font-black font-['Space_Grotesk'] text-[var(--text-primary)] tracking-tight">
-                  {item.qty.toLocaleString()}
-                </span>
-                <span className="text-sm font-medium text-[var(--text-secondary)]">{item.unit}</span>
-              </div>
-
-              {item.warning && (
-                <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded text-amber-500 text-xs font-semibold">
-                  <AlertCircle size={14} />
-                  {item.warning}
-                </div>
-              )}
-
-              <div className="mt-auto flex flex-col gap-3">
-                <div className="grid grid-cols-4 gap-2">
-                  <button onClick={() => handleAdjust(item.id, -50)} className="py-2 bg-[var(--bg-primary)] border border-[var(--border)] rounded text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--text-primary)] transition-colors">- 50</button>
-                  <button onClick={() => handleAdjust(item.id, -10)} className="py-2 bg-[var(--bg-primary)] border border-[var(--border)] rounded text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--text-primary)] transition-colors">- 10</button>
-                  <button onClick={() => handleAdjust(item.id, 10)} className="py-2 bg-[var(--bg-panel-raised)] border border-[var(--border)] rounded text-xs font-bold text-[var(--text-primary)] hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)] transition-colors">+ 10</button>
-                  <button onClick={() => handleAdjust(item.id, 50)} className="py-2 bg-[var(--bg-panel-raised)] border border-[var(--border)] rounded text-xs font-bold text-[var(--text-primary)] hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)] transition-colors">+ 50</button>
-                </div>
-                <div className="flex gap-2">
-                  <input 
-                    type="text" 
-                    placeholder="Custom qty..." 
-                    className="flex-1 min-w-0 bg-[var(--bg-primary)] border border-[var(--border)] rounded px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors"
-                  />
-                  <button className="px-3 py-2 bg-[var(--bg-primary)] border border-[var(--border)] rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0">
-                    <Minus size={14} />
-                  </button>
-                  <button className="px-4 py-2 bg-[var(--bg-panel-raised)] border border-[var(--border)] rounded flex items-center gap-1 text-xs font-bold text-[var(--text-primary)] hover:text-[var(--accent-primary)] hover:border-[var(--accent-primary)] transition-colors shrink-0">
-                    <Plus size={14} /> Add
-                  </button>
-                </div>
-              </div>
-            </motion.div>
+            <InventoryCard 
+              key={item.id} 
+              item={item} 
+              onRemove={handleRequestRemoveItem} 
+              onAdjust={handleAdjust} 
+            />
           ))}
         </AnimatePresence>
       </div>
@@ -570,19 +607,33 @@ export default function CommanderInventory() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-widest">
-                    Initial Quantity
-                  </label>
-                  <input 
-                    type="number" 
-                    required
-                    min="0"
-                    value={newItemData.qty}
-                    onChange={(e) => setNewItemData({...newItemData, qty: e.target.value})}
-                    placeholder="Enter amount..."
-                    className="w-full bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[var(--ok)] transition-colors shadow-inner"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-widest">
+                      Initial Quantity
+                    </label>
+                    <input 
+                      type="number" 
+                      required
+                      min="0"
+                      value={newItemData.qty}
+                      onChange={(e) => setNewItemData({...newItemData, qty: e.target.value})}
+                      placeholder="Enter amount..."
+                      className="w-full bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[var(--ok)] transition-colors shadow-inner"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-widest">
+                      Shelf Number
+                    </label>
+                    <input 
+                      type="text" 
+                      value={newItemData.shelfNumber}
+                      onChange={(e) => setNewItemData({...newItemData, shelfNumber: e.target.value})}
+                      placeholder="e.g. TNK-04"
+                      className="w-full bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[var(--ok)] transition-colors shadow-inner"
+                    />
+                  </div>
                 </div>
 
                 {/* Footer */}

@@ -12,7 +12,7 @@ const sidebarLinks = [
  { to: '/admin/expedition', label: 'Expedition Planner', icon: Compass },
  { to: '/admin/cargo',   label: 'Global Cargo',    icon: Ship },
  { to: '/admin/inventory', label: 'Inventory',     icon: PackageSearch },
- { to: '/admin/history',  label: 'Admin History',   icon: History },
+ { to: '/admin/history',  label: 'History',   icon: History },
 ];
 
 function SidebarLink({ to, label, icon: Icon, end }) {

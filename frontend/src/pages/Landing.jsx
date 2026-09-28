@@ -164,83 +164,115 @@ export default function Landing() {
    {/* ═══════════════════════════════════════════════════════════
      3. BENTO BOX: THREE TIERS
      ═══════════════════════════════════════════════════════════ */}
-   <section id="features" className="relative z-20 w-full max-w-6xl mx-auto px-6 py-20">
+   <section id="features" className="relative z-20 w-full max-w-6xl mx-auto px-6 py-24">
     <motion.div
      initial="hidden"
      whileInView="visible"
      variants={fadeUp}
      viewport={{ once: true }}
-     className="flex items-center justify-center gap-3 mb-12"
+     className="flex flex-col items-center justify-center gap-3 mb-16 text-center"
     >
-     <span className="text-[var(--accent-primary)] text-sm">◆</span>
-     <ShieldCheck size={24} className="text-[var(--accent-primary)]" />
-     <h2 className="text-2xl md:text-3xl font-['Bebas_Neue'] tracking-widest text-[var(--text-primary)]">
-      THREE TIERS. ONE COMMAND DECK.
-     </h2>
-     <span className="text-[var(--accent-primary)] text-sm">◆</span>
+     <div className="flex items-center gap-3">
+       <span className="text-[var(--accent-primary)] text-sm">◆</span>
+       <ShieldCheck size={24} className="text-[var(--accent-primary)]" />
+       <h2 className="text-3xl md:text-5xl font-['Bebas_Neue'] tracking-widest text-[var(--text-primary)]">
+        FEATURES
+       </h2>
+       <span className="text-[var(--accent-primary)] text-sm">◆</span>
+     </div>
+     <p className="text-[var(--text-secondary)] max-w-2xl text-sm md:text-base mt-2">
+       Experience the next generation of digital infrastructure. Our platform combines powerful analytics, unbreakable security, and global reach.
+     </p>
     </motion.div>
 
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full">
-     {/* Card 1 — Cloud Command */}
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-5 w-full">
+     {/* Card 1 — Left Tall (Analytics) */}
      <motion.div
       whileInView="visible"
       initial="hidden"
       variants={fadeUp}
       viewport={{ once: true }}
-      className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] rounded-lg p-6 flex flex-col hover:border-[var(--accent-primary)] hover:-translate-y-2 hover:shadow-[0_12px_40px_-12px_rgba(59,130,246,0.15)] transition-all duration-500 ease-out group cursor-pointer"
+      className="md:col-span-5 md:row-span-2 bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] rounded-2xl p-8 flex flex-col hover:border-[var(--accent-primary)] hover:-translate-y-1 hover:shadow-[0_20px_40px_-15px_rgba(59,130,246,0.2)] transition-all duration-500 ease-out group relative overflow-hidden"
      >
-      <div className="flex items-center gap-1 mb-4">
-       <div className="w-[3px] h-5 bg-[var(--accent-primary)] rounded-sm"></div>
-       <span className="text-xs font-mono text-[var(--accent-primary)] font-bold tracking-widest px-1">01</span>
-       <div className="w-[3px] h-5 bg-[var(--border)] rounded-sm"></div>
+      <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--accent-primary)] opacity-5 rounded-full blur-3xl -mr-20 -mt-20 transition-opacity group-hover:opacity-10"></div>
+      
+      <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 mb-8">
+        <Activity size={24} className="text-[var(--accent-primary)]" />
       </div>
-      <Server size={20} className="text-[var(--text-secondary)] group-hover:text-[var(--accent-primary)] transition-colors mb-5" />
-      <h3 className="text-lg font-['Bebas_Neue'] text-[var(--text-primary)] tracking-wider mb-3 uppercase">Cloud Command</h3>
+      
+      <h3 className="text-2xl font-['Bebas_Neue'] text-[var(--text-primary)] tracking-wider mb-4">Real-Time Analytics</h3>
+      <p className="text-[var(--text-secondary)] leading-relaxed mb-8 flex-grow">
+       Monitor system performance and user engagement in real-time with our advanced metrics dashboard. Get instant actionable insights that drive growth.
+      </p>
+
+      {/* Decorative element simulating a chart */}
+      <div className="flex items-end gap-2 h-32 mt-auto w-full pt-6 border-t border-[var(--border)]">
+        {[40, 70, 45, 90, 65, 80, 100, 60].map((h, i) => (
+          <div key={i} className="flex-1 bg-[var(--accent-primary)] rounded-t-sm opacity-20 group-hover:opacity-60 transition-opacity duration-500" style={{ height: `${h}%`, transitionDelay: `${i * 50}ms` }}></div>
+        ))}
+      </div>
+     </motion.div>
+
+     {/* Card 2 — Top Right Wide (AI Insights) */}
+     <motion.div
+      whileInView="visible"
+      initial="hidden"
+      variants={fadeUp}
+      viewport={{ once: true }}
+      className="md:col-span-7 bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] rounded-2xl p-8 flex flex-col md:flex-row items-center gap-8 hover:border-purple-500 hover:-translate-y-1 hover:shadow-[0_20px_40px_-15px_rgba(168,85,247,0.15)] transition-all duration-500 ease-out group relative overflow-hidden"
+     >
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/5 opacity-0 rounded-full blur-3xl -ml-20 -mb-20 transition-opacity group-hover:opacity-100"></div>
+      
+      <div className="flex-1 z-10">
+        <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20 mb-6">
+          <Cpu size={24} className="text-purple-400" />
+        </div>
+        <h3 className="text-2xl font-['Bebas_Neue'] text-[var(--text-primary)] tracking-wider mb-3">Intelligent Processing</h3>
+        <p className="text-[var(--text-secondary)] leading-relaxed">
+         Harness the power of machine learning algorithms to automate complex decisions and predict trends before they happen.
+        </p>
+      </div>
+      
+      {/* Decorative element */}
+      <div className="w-full md:w-1/3 aspect-square rounded-full border border-dashed border-[var(--border)] flex items-center justify-center relative animate-[spin_30s_linear_infinite] group-hover:border-purple-500/30 transition-colors">
+        <div className="w-2/3 h-2/3 rounded-full border border-[var(--border)] flex items-center justify-center absolute group-hover:border-purple-500/50 transition-colors">
+          <div className="w-1/3 h-1/3 bg-purple-500/20 rounded-full group-hover:bg-purple-500/40 transition-colors blur-sm"></div>
+        </div>
+        <div className="absolute top-0 w-3 h-3 bg-purple-400 rounded-full shadow-[0_0_10px_rgba(168,85,247,0.8)]"></div>
+      </div>
+     </motion.div>
+
+     {/* Card 3 — Bottom Middle (Security) */}
+     <motion.div
+      whileInView="visible"
+      initial="hidden"
+      variants={fadeUp}
+      viewport={{ once: true }}
+      className="md:col-span-3 bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] rounded-2xl p-6 flex flex-col hover:border-green-500 hover:-translate-y-1 hover:shadow-[0_20px_40px_-15px_rgba(34,197,94,0.15)] transition-all duration-500 ease-out group"
+     >
+      <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center border border-green-500/20 mb-5">
+        <ShieldCheck size={20} className="text-green-400" />
+      </div>
+      <h3 className="text-xl font-['Bebas_Neue'] text-[var(--text-primary)] tracking-wider mb-2">Zero-Trust Security</h3>
       <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-       Centralized mission planning, fleet tracking, and deep historical analytics.
-       Synchronizes instantly when connectivity returns, resolving conflicts autonomously.
+       End-to-end encryption with military-grade architecture.
       </p>
      </motion.div>
 
-     {/* Card 2 — Edge Station */}
+     {/* Card 4 — Bottom Right (Global Connectivity) */}
      <motion.div
       whileInView="visible"
       initial="hidden"
       variants={fadeUp}
       viewport={{ once: true }}
-      className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] rounded-lg p-6 flex flex-col hover:border-[var(--accent-primary)] hover:-translate-y-2 hover:shadow-[0_12px_40px_-12px_rgba(59,130,246,0.25)] transition-all duration-500 ease-out group cursor-pointer"
+      className="md:col-span-4 bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] rounded-2xl p-6 flex flex-col hover:border-orange-500 hover:-translate-y-1 hover:shadow-[0_20px_40px_-15px_rgba(249,115,22,0.15)] transition-all duration-500 ease-out group"
      >
-      <div className="flex items-center gap-1 mb-4">
-       <div className="w-[3px] h-5 bg-[var(--accent-primary)] rounded-sm"></div>
-       <span className="text-xs font-mono text-[var(--accent-primary)] font-bold tracking-widest px-1">02</span>
-       <div className="w-[3px] h-5 bg-[var(--border)] rounded-sm"></div>
+      <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center border border-orange-500/20 mb-5">
+        <Compass size={20} className="text-orange-400" />
       </div>
-      <Zap size={20} className="text-[var(--text-secondary)] group-hover:text-[var(--accent-primary)] transition-colors mb-5" />
-      <h3 className="text-lg font-['Bebas_Neue'] text-[var(--text-primary)] tracking-wider mb-3 uppercase">Edge Station</h3>
+      <h3 className="text-xl font-['Bebas_Neue'] text-[var(--text-primary)] tracking-wider mb-2">Global Access</h3>
       <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-       Full offline capability. Your base camp server continues tracking inventory,
-       personnel, and emergency status even when the satellite link drops out for days.
-      </p>
-     </motion.div>
-
-     {/* Card 3 — Physical Layer */}
-     <motion.div
-      whileInView="visible"
-      initial="hidden"
-      variants={fadeUp}
-      viewport={{ once: true }}
-      className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] rounded-lg p-6 flex flex-col hover:border-[var(--accent-primary)] hover:-translate-y-2 hover:shadow-[0_12px_40px_-12px_rgba(59,130,246,0.15)] transition-all duration-500 ease-out group cursor-pointer"
-     >
-      <div className="flex items-center gap-1 mb-4">
-       <div className="w-[3px] h-5 bg-[var(--accent-primary)] rounded-sm"></div>
-       <span className="text-xs font-mono text-[var(--accent-primary)] font-bold tracking-widest px-1">03</span>
-       <div className="w-[3px] h-5 bg-[var(--border)] rounded-sm"></div>
-      </div>
-      <Map size={20} className="text-[var(--text-secondary)] group-hover:text-[var(--accent-primary)] transition-colors mb-5" />
-      <h3 className="text-lg font-['Bebas_Neue'] text-[var(--text-primary)] tracking-wider mb-3 uppercase">Physical Layer</h3>
-      <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-       Ruggedized ESP32 hardware, LoRaWAN mesh networking, and GNSS modules ensuring every
-       asset is monitored down to the last centimeter and degree.
+       Multi-region CDN deployment ensures ultra-low latency worldwide.
       </p>
      </motion.div>
     </div>

@@ -7,20 +7,20 @@ export default function AdminInventory() {
 
   const [inventoryData] = useState({
     Himadri: [
-      { id: 1, name: 'Aviation Fuel (ATF)', qty: 12500, unit: 'L' },
-      { id: 2, name: 'Thermal Rations', qty: 4200, unit: 'Packs' },
-      { id: 3, name: 'Medical Kits (Trauma)', qty: 150, unit: 'Units' },
-      { id: 4, name: 'IoT Base Stations', qty: 8, unit: 'Nodes' },
+      { id: 1, name: 'Aviation Fuel (ATF)', qty: 12500, currentQty: 12000, reqQty: 500, reqTime: '2026-09-28T19:10:00Z', unit: 'L' },
+      { id: 2, name: 'Thermal Rations', qty: 4200, currentQty: 4000, reqQty: 200, reqTime: '2026-09-28T16:00:00Z', unit: 'Packs' },
+      { id: 3, name: 'Medical Kits (Trauma)', qty: 150, currentQty: 150, reqQty: 0, reqTime: null, unit: 'Units' },
+      { id: 4, name: 'IoT Base Stations', qty: 8, currentQty: 5, reqQty: 3, reqTime: '2026-09-27T10:00:00Z', unit: 'Nodes' },
     ],
     Bharati: [
-      { id: 5, name: 'Diesel (Marine Grade)', qty: 25000, unit: 'L' },
-      { id: 6, name: 'Deep Freeze Suits', qty: 45, unit: 'Sets' },
-      { id: 7, name: 'Emergency Beacons', qty: 12, unit: 'Units' },
+      { id: 5, name: 'Diesel (Marine Grade)', qty: 25000, currentQty: 24000, reqQty: 1000, reqTime: '2026-09-28T18:00:00Z', unit: 'L' },
+      { id: 6, name: 'Deep Freeze Suits', qty: 45, currentQty: 45, reqQty: 0, reqTime: null, unit: 'Sets' },
+      { id: 7, name: 'Emergency Beacons', qty: 12, currentQty: 10, reqQty: 2, reqTime: '2026-09-28T09:00:00Z', unit: 'Units' },
     ],
     Maitri: [
-      { id: 8, name: 'Generator Bearings', qty: 4, unit: 'Crates' },
-      { id: 9, name: 'Antibiotics Box', qty: 200, unit: 'Packs' },
-      { id: 10, name: 'Satellite Dish Spares', qty: 2, unit: 'Units' },
+      { id: 8, name: 'Generator Bearings', qty: 4, currentQty: 2, reqQty: 2, reqTime: '2026-09-28T20:15:00Z', unit: 'Crates' },
+      { id: 9, name: 'Antibiotics Box', qty: 200, currentQty: 200, reqQty: 0, reqTime: null, unit: 'Packs' },
+      { id: 10, name: 'Satellite Dish Spares', qty: 2, currentQty: 1, reqQty: 1, reqTime: '2026-09-26T12:00:00Z', unit: 'Units' },
     ]
   });
 
@@ -183,7 +183,9 @@ export default function AdminInventory() {
                   <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wider text-[var(--text-secondary)]">
                     <th className="pb-3 font-semibold">Asset ID</th>
                     <th className="pb-3 font-semibold">Asset Name</th>
-                    <th className="pb-3 font-semibold text-right">Stale Qty</th>
+                    <th className="pb-3 font-semibold text-right text-amber-500/70 pr-4">Stale Qty</th>
+                    <th className="pb-3 font-semibold text-right pr-4">Requested Qty</th>
+                    <th className="pb-3 font-semibold text-right">Req. Time</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -191,8 +193,32 @@ export default function AdminInventory() {
                     <tr key={item.id} className="border-b border-[var(--border)]/50 hover:bg-[var(--bg-panel-raised)] transition-colors">
                       <td className="py-3 text-xs font-mono text-[var(--text-secondary)] opacity-50">SYS-{item.id}</td>
                       <td className="py-3 text-sm font-semibold text-[var(--text-primary)]">{item.name}</td>
-                      <td className="py-3 text-sm font-mono text-[var(--text-primary)] text-right">
-                        {item.qty} <span className="text-[10px] text-[var(--text-secondary)]">{item.unit}</span>
+                      <td className="py-3 text-sm font-mono text-amber-500 opacity-80">
+                        <div className="flex justify-end items-baseline gap-2 w-[110px] ml-auto">
+                          <span className="text-right flex-1">{item.qty}</span>
+                          <span className="text-[10px] text-amber-500/50 w-10 text-left">{item.unit}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 text-sm font-mono text-[var(--text-primary)]">
+                        {item.reqQty > 0 ? (
+                          <div className="flex justify-end items-baseline gap-2 w-[110px] ml-auto">
+                            <span className="text-[var(--accent-primary)] font-bold text-right flex-1">+{item.reqQty}</span>
+                            <span className="text-[10px] text-[var(--text-secondary)] w-10 text-left">{item.unit}</span>
+                          </div>
+                        ) : (
+                          <div className="flex justify-end items-baseline gap-2 w-[110px] ml-auto">
+                            <span className="text-[var(--text-secondary)] text-right flex-1">-</span>
+                            <span className="text-[10px] text-[var(--text-secondary)] w-10 text-left"></span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 text-[11px] font-mono text-[var(--text-secondary)] text-right">
+                        {item.reqTime ? (
+                          <div className="flex flex-col items-end">
+                            <span>{new Date(item.reqTime).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                            <span className="text-[10px] opacity-70 mt-0.5">{new Date(item.reqTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                          </div>
+                        ) : '--'}
                       </td>
                     </tr>
                   ))}
