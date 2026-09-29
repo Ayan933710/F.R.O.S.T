@@ -11,7 +11,7 @@ export default function Inventory() {
 
  useEffect(() => {
   // Connect CRDT sync
-  syncRef.current = setupSync('ws://localhost:5000/crdt');
+  syncRef.current = setupSync((import.meta.env.VITE_WS_URL || 'ws://localhost:5000') + '/crdt');
 
   // Track connection state changes
   const onStatus = (e) => setConnected(e.detail.connected);

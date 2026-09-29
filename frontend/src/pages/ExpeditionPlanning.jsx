@@ -20,8 +20,8 @@ export default function ExpeditionPlanning() {
   const fetchData = async () => {
    try {
     const [expRes, rosterRes] = await Promise.all([
-     axios.get('http://localhost:5000/api/v1/expeditions'),
-     axios.get('http://localhost:5000/api/v1/roster')
+     axios.get((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/expeditions'),
+     axios.get((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/roster')
     ]);
     if (expRes.data.length > 0) setExpedition(expRes.data[0]);
     setRoster(rosterRes.data);
@@ -37,7 +37,7 @@ export default function ExpeditionPlanning() {
   if (awsMode) {
    const fetchAWSAndPredict = async () => {
     try {
-     const res = await axios.get('http://localhost:5000/api/v1/aws/current');
+     const res = await axios.get((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/aws/current');
      const newData = {
       U10: res.data.U10,
       pressure_drop: res.data.pressure_drop,
@@ -47,7 +47,7 @@ export default function ExpeditionPlanning() {
      setInputs(newData);
      
      // Automatically run the prediction with the fresh data
-     const predRes = await axios.get('http://localhost:5000/api/v1/ml/predict-window', {
+     const predRes = await axios.get((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/ml/predict-window', {
       params: {
        ...newData,
        timestamp: new Date().toISOString(),
@@ -66,7 +66,7 @@ export default function ExpeditionPlanning() {
  const checkTransportWindow = async () => {
   setLoading(true);
   try {
-   const res = await axios.get('http://localhost:5000/api/v1/ml/predict-window', {
+   const res = await axios.get((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/ml/predict-window', {
     params: {
      ...inputs,
      timestamp: new Date().toISOString(),

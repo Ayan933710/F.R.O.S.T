@@ -12,7 +12,7 @@ import {
   Zap,
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:5000/api/v1';
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1';
 
 function StationCard({ station, isSelected, onSelect }) {
   const [liveTemp, setLiveTemp] = useState(null);
@@ -158,7 +158,7 @@ function DetailPanel({ station, onBack }) {
     const loadRoster = async () => {
       try {
         const stationName = station.name.split(' ')[0];
-        const res = await fetch(`http://localhost:5000/api/stations/${stationName}/roster`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:5000')}/api/stations/${stationName}/roster`);
         const data = await res.json();
         if (active && data.success) {
           setLiveRoster(data.roster);

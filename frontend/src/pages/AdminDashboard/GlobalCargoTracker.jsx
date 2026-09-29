@@ -39,7 +39,7 @@ export default function GlobalCargoTracker() {
  const [activeShipments, setActiveShipments] = useState(shipments);
 
  useEffect(() => {
-  fetch('http://localhost:5000/api/v1/cargo/manifests')
+  fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/cargo/manifests')
    .then(res => res.json())
    .then(data => {
     if (data && data.length > 0) {
@@ -49,6 +49,13 @@ export default function GlobalCargoTracker() {
                          destName.includes('maitri') ? [11.8, -70.7] : [11.9, 78.9];
       const isDelivered = m.status === 'Delivered (Base)';
       
+      const isNavyShip = (m.vessel || '').includes('INS');
+      const startCoords = isNavyShip ? [73.8, 15.4] : [18.4, -33.9]; // Goa (India) or Cape Town
+      
+      // Calculate a mid-point for "current" if not delivered
+      const currentCoords = isDelivered ? destCoords : 
+                            isNavyShip ? [75.0, -20.0] : [18.4, -50.0];
+
       return {
        id: m.manifest_id,
        vessel: m.vessel || `Vessel ${i+1}`,
@@ -56,8 +63,8 @@ export default function GlobalCargoTracker() {
        destination: m.destination || 'Unknown',
        eta: new Date(m.created_at).toLocaleDateString(),
        status: m.status === 'Draft' ? 'Delayed' : isDelivered ? 'Docked' : 'In Transit',
-       start: [-40, -30],
-       current: isDelivered ? destCoords : [-40, -50],
+       start: startCoords,
+       current: currentCoords,
        end: destCoords,
        heading: isDelivered ? '000° Docked' : '184° S',
        speed: isDelivered ? '0.0 knots' : '14.2 knots',

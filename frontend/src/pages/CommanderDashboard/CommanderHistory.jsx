@@ -21,7 +21,7 @@ export default function CommanderHistory() {
  useEffect(() => {
   const fetchLogs = async () => {
    try {
-    const res = await fetch('http://localhost:5000/api/v1/audit');
+    const res = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/audit');
     if (res.ok) {
      const data = await res.json();
      setHistoryEntries(data.filter(log => log.metadata?.commanderId === `CMD-${station.toUpperCase()}`).map(log => ({

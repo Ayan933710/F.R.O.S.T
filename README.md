@@ -15,6 +15,7 @@
 ---
 
 **F.R.O.S.T** (Field Research & Operational Supply Tracker) is a mission-critical logistics platform built to sustain extreme-environment polar research stations. From predicting localized cold-chain supply exhaustion to orchestrating high-stakes global manifests, F.R.O.S.T provides commanders with a real-time, zero-latency situational awareness dashboard. Designed with a stunning cyber-tactical aesthetic, the platform bridges cutting-edge telemetry tracking with robust inventory ledgers to ensure no researcher is left stranded.
+<<<<<<< HEAD
 
 ## 🗺️ System Workflow & User Journey
 
@@ -53,6 +54,37 @@ F.R.O.S.T is engineered for two primary operational profiles, ensuring streamlin
 
 > [!NOTE] 
 > Insert GIF of the dynamic Open-Meteo Weather Integration here
+=======
+
+## 🗺️ System Workflow & User Journey
+
+F.R.O.S.T is engineered for two primary operational profiles, ensuring streamlined communication between headquarters and the deep freeze:
+
+- **Global Admin (HQ):** Operates from the macro-level. The Admin dashboard provides a bird's-eye view of all polar assets (Maitri, Bharati, Himadri). HQ oversees global cargo transits, approves life-saving expeditions, manages system-wide inventory allocations, and monitors the overall health of the logistics network.
+- **Station Commander (Field):** A hyper-localized, tactical view designed for extreme environments. Commanders monitor live sensor telemetry, track real-time local weather API feeds, manage active station rosters, and submit localized supply requisitions before critical items hit zero.
+
+### The Logistics Lifecycle
+1. **Requisition Created:** A Station Commander identifies a critical shortfall (e.g., thermal generators) and issues a requisition.
+2. **Manifest Generated:** HQ approves the requisition, packing the items into a global transit manifest.
+3. **Deployed:** The cargo enters transit, tracked globally via the F.R.O.S.T ledger.
+4. **Inventory Updated:** Upon arrival, the cargo is scanned into the local station's cold-chain inventory via CRDT-synced state updates.
+
+## ⚡ Comprehensive Feature Matrix
+
+### Operational Capabilities
+- **Cold-Chain Inventory Tracking:** Precision monitoring of perishable and high-value equipment with automatic low-stock warnings.
+- **Role-Based Tactical Dashboards:** Distinct UX/UI flows for Global Admins and Station Commanders, maximizing cognitive focus.
+- **Active Personnel Rostering:** Live tracking of deployed scientists and crew complements assigned to each polar station.
+- **Predictive Consumption Baselines:** Powered by our dedicated Python ML service to forecast supply exhaustion before it becomes critical.
+
+### Technical Engineering
+- **Yjs CRDT Real-Time Synchronization:** Conflict-free, real-time localized state synchronization across the logistics network, ensuring data integrity even during intermittent satellite connections.
+- **MongoDB Aggregation Pipelines:** Highly optimized database queries that dynamically calculate cross-station metrics and active rosters.
+- **Responsive Mobile-First Tailwind UI:** Fluid, cyber-tactical interface that degrades gracefully into app-like bottom navigation bars for mobile fieldwork.
+- **Open-Meteo External API Integrations:** Live meteorological telemetry streaming surface temperature, wind speed, relative humidity, and pressure directly into the operational cards.
+
+
+>>>>>>> 9db55d9782cc333a9707e5b2d92bc0bb63360af9
 
 ## 📂 Project Structure
 
@@ -155,3 +187,17 @@ We welcome pull requests from the community to help stabilize polar logistics!
 3. **Commit your Changes:** `git commit -m 'Add new radar ping animation'`
 4. **Push to the Branch:** `git push origin feature/tactical-radar-update`
 5. **Open a Pull Request** ensuring your code adheres to existing Tailwind styles and doesn't break Yjs synchronization flows.
+
+---
+
+<div align="center">
+  <h3>🛡️ Built for Resilience. Engineered for the Extreme.</h3>
+  <p><b>Made by Team HackCypher</b></p>
+  <p>For inquiries, deployment access, or collaboration, establish a comm-link:</p>
+  <a href="mailto:hackcypher2025@gmail.com">
+    <img src="https://img.shields.io/badge/Email-hackcypher2025%40gmail.com-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Email Team HackCypher" />
+  </a>
+  <br />
+  <br />
+  <p><i>"Ensuring 100% mission integrity when connectivity is a luxury."</i></p>
+</div>

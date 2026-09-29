@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { useIceNet } from '../../context/IceNetContext';
 
-
 export default function ArrivalCargoScanner() {
  const { sealedManifestHash } = useIceNet();
  const [payloadInput, setPayloadInput] = useState('');
@@ -25,50 +24,79 @@ export default function ArrivalCargoScanner() {
  const [activeManifest, setActiveManifest] = useState(null);
  const [manifestItems, setManifestItems] = useState([]);
  const [expectedHash, setExpectedHash] = useState('');
+ const [pendingManifests, setPendingManifests] = useState([]);
+ const [station] = useState(() => localStorage.getItem('activeStation') || 'maitri');
 
  useEffect(() => {
   const fetchManifest = async () => {
    try {
-    const res = await fetch('http://localhost:5000/api/v1/cargo/manifests/latest');
+    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/v1/cargo/manifests`);
     if (res.ok) {
      const data = await res.json();
-     setActiveManifest(data);
-     setExpectedHash(data.crypto_hash || '');
-     if (data.items) {
-      setManifestItems(data.items.map(item => ({
-       item: item.name,
-       expected: item.qty,
-       scanned: item.qty, // Mock scanned count
-       critical: false
-      })));
+     // Filter manifests intended for this station
+     const stationManifests = data.filter(m => m.destination && m.destination.toLowerCase().includes(station.toLowerCase()) && m.crypto_hash);
+     // Sort by newest first
+     stationManifests.sort((a,b) => new Date(b.sealed_at) - new Date(a.sealed_at));
+     setPendingManifests(stationManifests);
+     
+     if (stationManifests.length > 0) {
+       setActiveManifest(stationManifests[0]);
+       setExpectedHash(stationManifests[0].crypto_hash);
+       if (stationManifests[0].items) {
+        setManifestItems(stationManifests[0].items.map(item => ({
+         item: item.name,
+         expected: item.qty,
+         scanned: item.qty,
+         critical: false
+        })));
+       }
      }
     }
    } catch (e) {
-    console.error('Failed to fetch latest manifest', e);
+    console.error('Failed to fetch manifests', e);
    }
   };
   fetchManifest();
- }, []);
+ }, [station]);
 
  const executeVerify = async (inputToTest) => {
   const value = (inputToTest !== undefined ? inputToTest : payloadInput).trim();
   if (!value) return;
 
   try {
-    const manifest_id = activeManifest ? activeManifest.manifest_id : null;
-    if (!manifest_id) throw new Error('No active manifest to verify');
+    const matchedManifest = pendingManifests.find(m => m.crypto_hash === value);
+    if (!matchedManifest) {
+      setVerifyResult('mismatch');
+      setShakeKey((prev) => prev + 1);
+      if (manifestItems.length > 0) {
+        const tamperedItems = [...manifestItems];
+        tamperedItems[0].scanned = tamperedItems[0].expected - 2; 
+        setManifestItems(tamperedItems);
+      }
+      return;
+    }
+
+    setActiveManifest(matchedManifest);
+    setExpectedHash(matchedManifest.crypto_hash);
+    if (matchedManifest.items) {
+      setManifestItems(matchedManifest.items.map(item => ({
+       item: item.name,
+       expected: item.qty,
+       scanned: item.qty,
+       critical: false
+      })));
+    }
     
-    const verifyRes = await fetch('http://localhost:5000/api/v1/cargo/verify-hash', {
+    const verifyRes = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/cargo/verify-hash', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ manifest_id, scanned_hash: value })
+      body: JSON.stringify({ manifest_id: matchedManifest.manifest_id, scanned_hash: value })
     });
     
     const verifyData = await verifyRes.json();
     if (verifyRes.ok && verifyData.matches) {
       setVerifyResult('match');
-      // If matches, update manifest status to Delivered (Base)
-      await fetch(`http://localhost:5000/api/v1/cargo/manifest/${manifest_id}/status`, {
+      await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:5000')}/api/v1/cargo/manifest/${matchedManifest.manifest_id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'Delivered (Base)' })
@@ -76,19 +104,10 @@ export default function ArrivalCargoScanner() {
     } else {
       setVerifyResult('mismatch');
       setShakeKey((prev) => prev + 1);
-      if (manifestItems.length > 0) {
-        const tamperedItems = [...manifestItems];
-        tamperedItems[0].scanned = tamperedItems[0].expected - 2; // Mock a mismatch delta
-        setManifestItems(tamperedItems);
-      }
     }
   } catch (error) {
-    if (expectedHash && value === expectedHash) {
-     setVerifyResult('match');
-    } else {
-     setVerifyResult('mismatch');
-     setShakeKey((prev) => prev + 1);
-    }
+    setVerifyResult('mismatch');
+    setShakeKey((prev) => prev + 1);
   }
  };
 
@@ -97,15 +116,13 @@ export default function ArrivalCargoScanner() {
   setVerifyResult(null);
   
   if (manifestItems.length > 0) {
-    // Reset scanned to expected
     setManifestItems(manifestItems.map(item => ({...item, scanned: item.expected})));
   }
 
   setTimeout(() => {
    setIsScanning(false);
-   const targetHash = match
-    ? expectedHash || sealedManifestHash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-    : 'tampered-payload-hash-d7a8e2b9c0f41289ae39fb21980';
+   const validHash = pendingManifests.length > 0 ? pendingManifests[0].crypto_hash : 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+   const targetHash = match ? validHash : 'tampered-payload-hash-d7a8e2b9c0f41289ae39fb21980';
    setPayloadInput(targetHash);
    executeVerify(targetHash);
   }, 1500);
@@ -133,12 +150,12 @@ export default function ArrivalCargoScanner() {
      <div className="flex items-center gap-2">
       <Hash size={16} className="text-[var(--accent-primary)]" />
       <span className="text-[var(--text-secondary)] text-xs uppercase tracking-widest font-semibold">
-    Expected Manifest Hash
+    Expected Manifest Hashes (Station: {station.toUpperCase()})
       </span>
      </div>
-     {expectedHash || sealedManifestHash ? (
+     {pendingManifests.length > 0 ? (
       <span className="text-[10px] text-[var(--ok)] bg-[var(--ok)]/10 border border-[var(--ok)] px-2 py-0.5 rounded font-mono font-bold">
-    HASH AVAILABLE
+    {pendingManifests.length} PENDING INBOUND
       </span>
      ) : (
       <span className="text-[10px] text-[var(--accent-primary)] bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)] px-2 py-0.5 rounded font-mono font-bold">
@@ -147,9 +164,20 @@ export default function ArrivalCargoScanner() {
      )}
     </div>
 
-    <p className="text-[var(--text-primary)] font-mono text-xs break-all leading-relaxed bg-[var(--bg-primary)] p-2.5 rounded border border-[var(--border)] select-all">
-    {expectedHash || sealedManifestHash || 'No reference hash loaded'}
-    </p>
+    <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
+      {pendingManifests.map(m => (
+        <div key={m.manifest_id} className="bg-[var(--bg-primary)] p-2.5 rounded border border-[var(--border)]">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-[10px] text-[var(--accent-primary)] font-bold">{m.manifest_id}</span>
+            <span className="text-[10px] text-[var(--text-secondary)]">{new Date(m.sealed_at).toLocaleString()}</span>
+          </div>
+          <p className="text-[var(--text-primary)] font-mono text-[10px] break-all select-all">{m.crypto_hash}</p>
+        </div>
+      ))}
+      {pendingManifests.length === 0 && (
+         <p className="text-[var(--text-primary)] font-mono text-xs break-all leading-relaxed bg-[var(--bg-primary)] p-2.5 rounded border border-[var(--border)]">No reference hashes loaded for {station}</p>
+      )}
+    </div>
    </div>
 
    {/* Interactive Laser Barcode Scanning Area */}
@@ -243,7 +271,7 @@ export default function ArrivalCargoScanner() {
       <button
        type="button"
        onClick={() => handleSimulateHardwareScan(Math.random() > 0.3)}
-       disabled={isScanning}
+       disabled={isScanning || pendingManifests.length === 0}
        className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--accent-primary)] text-[var(--accent-primary)] rounded text-xs font-semibold hover:bg-[var(--accent-primary)] hover:text-white transition-colors cursor-pointer disabled:opacity-40"
       >
        <Barcode size={13} />
@@ -300,7 +328,7 @@ export default function ArrivalCargoScanner() {
           MANIFEST VERIFIED - INTEGRITY CONFIRMED
          </h3>
          <p className="text-[var(--text-secondary)] text-xs mt-0.5">
-          Scanned payload matches the loaded reference hash.
+          Scanned payload matches an expected reference hash for {station.toUpperCase()}.
          </p>
         </div>
        </div>
@@ -329,7 +357,7 @@ export default function ArrivalCargoScanner() {
           </span>
          </div>
          <p className="text-[var(--text-secondary)] text-xs mt-1">
-          Scanned payload differs from the loaded reference. Do not accept the shipment until it is checked.
+          Scanned payload differs from all loaded references. Do not accept the shipment until it is checked.
          </p>
         </div>
        </div>
@@ -355,6 +383,7 @@ export default function ArrivalCargoScanner() {
        </div>
 
        {/* Discrepancy Breakdown Table */}
+       {manifestItems.length > 0 && (
        <div className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] rounded-lg border border-[var(--border)] overflow-hidden">
         <table className="w-full text-xs font-['Work_Sans']">
          <thead>
@@ -393,6 +422,7 @@ export default function ArrivalCargoScanner() {
          </tbody>
         </table>
        </div>
+       )}
       </motion.div>
      )}
     </AnimatePresence>

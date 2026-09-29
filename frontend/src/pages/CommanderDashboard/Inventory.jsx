@@ -4,7 +4,7 @@ import { Wifi, Search, Plus, Minus, AlertCircle, Send, X, Clock, CloudOff, Refre
 
 const mockData = [];
 
-const API_BASE = 'http://localhost:5000/api/v1';
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1';
 const MOVEMENT_QUEUE_KEY = 'icenet.inventoryMovementQueue';
 let movementSyncPromise = null;
 

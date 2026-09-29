@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Package, ShieldCheck, ShieldAlert, FileText, QrCode, ArrowRight, Lock, Unlock, Eye, Hash, ChevronRight } from 'lucide-react';
 
-const API = 'http://localhost:5000/api/v1';
+const API = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1';
 
 const STATUS_PIPELINE = [
  'Draft',

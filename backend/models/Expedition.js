@@ -10,6 +10,8 @@ const ExpeditionSchema = new mongoose.Schema({
   budget: { type: mongoose.Schema.Types.Mixed },
   charter_schedule: { type: mongoose.Schema.Types.Mixed },
   budget_allocation: { type: mongoose.Schema.Types.Mixed },
+  summer_roster: { type: mongoose.Schema.Types.Mixed },
+  winter_roster: { type: mongoose.Schema.Types.Mixed },
   status: { type: String, default: 'Planning' }
 });
 

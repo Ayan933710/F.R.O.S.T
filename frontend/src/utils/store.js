@@ -136,7 +136,7 @@ doc.on('update', () => {
 /**
  * Call once from the root component. Returns a teardown function.
  *
- * @param {string} wsUrl  e.g. 'ws://localhost:5000/crdt'
+ * @param {string} wsUrl  e.g. (import.meta.env.VITE_WS_URL || 'ws://localhost:5000') + '/crdt'
  */
 export function setupSync(wsUrl) {
   let ws = null;
@@ -251,7 +251,7 @@ export function setupSync(wsUrl) {
           ws.send(JSON.stringify({ type: 'update', update: arr }));
         } else {
           // WS dropped mid-flush; fall back to HTTP
-          await fetch('http://localhost:5000/api/v1/sync/crdt', {
+          await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/sync/crdt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

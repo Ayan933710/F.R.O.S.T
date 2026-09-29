@@ -72,7 +72,7 @@ export default function ExpeditionPlanner() {
 
  useEffect(() => {
   let cancelled = false;
-    fetch('http://localhost:5000/api/v1/expeditions/ISEA-46')
+    fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/expeditions/ISEA-46')
      .then(response => {
        if (!response.ok) throw new Error(`Could not load expedition plan (${response.status})`);
     return response.json();
@@ -81,10 +81,32 @@ export default function ExpeditionPlanner() {
      if (cancelled) return;
      if (Array.isArray(expedition.charter_schedule)) setFlights(expedition.charter_schedule);
      if (Array.isArray(expedition.budget_allocation)) setBudgetData(expedition.budget_allocation);
+     if (Array.isArray(expedition.summer_roster)) setSummerRoster(expedition.summer_roster);
+     if (Array.isArray(expedition.winter_roster)) setWinterRoster(expedition.winter_roster);
    })
    .catch(error => {
     if (!cancelled) setPlannerNotice(error.message);
    });
+
+   // Fetch actual sealed manifests from DB to override the hardcoded placeholder
+   fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/cargo/manifests')
+     .then(res => res.json())
+     .then(data => {
+       if (cancelled || !Array.isArray(data)) return;
+       const sealed = data.filter(m => m.crypto_hash).map(m => ({
+         hash: m.crypto_hash,
+         destination: m.destination,
+         vessel: m.vessel,
+         items: m.items,
+         timestamp: new Date(m.sealed_at).toLocaleString(),
+         sealedBy: 'AdminHQ',
+         status: m.status
+       })).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+       if (sealed.length > 0) {
+         setSealedManifests(sealed);
+       }
+     })
+     .catch(err => console.error('Failed to fetch manifests', err));
 
   return () => { cancelled = true; };
  }, []);
@@ -93,7 +115,7 @@ export default function ExpeditionPlanner() {
   setIsPlannerSaving(true);
   setPlannerNotice('');
   try {
-   const response = await fetch('http://localhost:5000/api/v1/expeditions/ISEA-46', {
+   const response = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/expeditions/ISEA-46', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fields),
@@ -134,7 +156,7 @@ export default function ExpeditionPlanner() {
     date: '2026-10-01',
     duration: 1,
     offset: 0,
-    status: 'Planned',
+    status: 'Pending',
     window: 'To be scheduled',
    }];
   });
@@ -173,7 +195,7 @@ export default function ExpeditionPlanner() {
   sealedManifestHash ? [{
    hash: sealedManifestHash,
    destination: 'Bharati Station, Antarctica',
-   vessel: 'LC-130 Hercules',
+   vessel: 'INS Jalashwa',
    items: [
     { name: 'Modular Generators', qty: 2, unit: 'Units' },
     { name: 'Food Supplies', qty: 1.5, unit: 'T' },
@@ -188,12 +210,12 @@ export default function ExpeditionPlanner() {
  const [sealStep, setSealStep] = useState('CREATE'); // 'CREATE' | 'REVIEW'
  const [draftManifest, setDraftManifest] = useState({
   destination: 'Bharati',
-  vessel: 'LC-130 Hercules',
+  vessel: 'INS Jalashwa',
   items: [
    { name: 'Medical Kits (Trauma)', qty: 5, unit: 'Units', isCustom: false }
   ]
  });
- const availableVessels = ['Icebreaker SA Agulhas', 'LC-130 Hercules', 'Ilyushin IL-76', 'C-17 Globemaster'];
+ const availableVessels = ['PRV Sagar Nidhi', 'INS Jalashwa', 'PRV Sagar Kanya', 'PRV Sagar Sampada'];
 
  const standardInventory = [
   { name: 'Aviation Turbine Fuel (ATF)', unit: 'Liters' },
@@ -230,16 +252,24 @@ export default function ExpeditionPlanner() {
   setIsAddRosterOpen(false);
  };
 
+ useEffect(() => {
+  if (summerRoster === initialSummerTeam && winterRoster === initialWinterTeam) return;
+  const timeoutId = setTimeout(() => {
+    savePlannerFields({ summer_roster: summerRoster, winter_roster: winterRoster });
+  }, 1000);
+  return () => clearTimeout(timeoutId);
+ }, [summerRoster, winterRoster]);
+
  const handlePredictWindow = async () => {
   setIsPredicting(true);
   setPredictionResult(null);
   setPredictionError('');
   try {
-   const weatherResponse = await fetch(`http://localhost:5000/api/v1/aws/current?station=${weatherStation}`);
+   const weatherResponse = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:5000')}/api/v1/aws/current?station=${weatherStation}`);
    const weather = await weatherResponse.json();
    if (!weatherResponse.ok) throw new Error(weather.error || 'Live weather unavailable');
 
-   const predictionUrl = new URL('http://localhost:5000/api/v1/ml/predict-window');
+   const predictionUrl = new URL((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/ml/predict-window');
    Object.entries({
     U10: weather.U10,
     pressure_drop: weather.pressure_drop,
@@ -299,13 +329,13 @@ export default function ExpeditionPlanner() {
     vessel_mmsi: '123456789'
    };
    
-   await fetch('http://localhost:5000/api/v1/cargo/manifest', {
+   await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/cargo/manifest', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
    });
    
-   const sealRes = await fetch(`http://localhost:5000/api/v1/cargo/manifest/${manifest_id}/seal`, {
+   const sealRes = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:5000')}/api/v1/cargo/manifest/${manifest_id}/seal`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' }
    });
@@ -331,7 +361,7 @@ export default function ExpeditionPlanner() {
    setIsSealing(false);
    setIsSealModalOpen(false);
    setSealStep('CREATE');
-   setDraftManifest({ destination: 'Himadri', vessel: 'Icebreaker SA Agulhas', items: [{ name: 'Seismic Sensors', qty: 12, unit: 'Units' }] });
+   setDraftManifest({ destination: 'Himadri', vessel: 'PRV Sagar Nidhi', items: [{ name: 'Seismic Sensors', qty: 12, unit: 'Units' }] });
   }
  };
 
@@ -373,7 +403,7 @@ export default function ExpeditionPlanner() {
        <div>
          <h3 className="text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-widest flex items-center gap-2">
           <Plane size={15} className="text-[var(--accent-primary)]" />
-          Expedition Roster
+          Charter Flight Schedule
         </h3>
         {/* Status Legend */}
         <div className="flex items-center gap-4 text-xs font-['Work_Sans'] mt-2">
@@ -501,7 +531,7 @@ export default function ExpeditionPlanner() {
        <div className="mt-4 border-t border-[var(--border)] pt-4">
         <p className="mb-3 text-[10px] text-[var(--text-secondary)]">Status is manually set by the planner; it is not verified against weather, clearance, or dispatch systems.</p>
         <div className="grid grid-cols-[minmax(64px,0.7fr)_minmax(130px,2fr)_minmax(120px,1fr)_90px_120px_36px] gap-2 mb-2 text-[10px] text-[var(--text-secondary)] uppercase">
-         <span>Charter</span><span>Route</span><span>Date</span><span>Days</span><span>Status</span><span />
+         <span>Charter</span><span>Route</span><span>Date</span><span>Days</span><span>Status (Auto)</span><span />
         </div>
         <div className="space-y-2">
          {flightDraft.map(flight => (
@@ -529,18 +559,9 @@ export default function ExpeditionPlanner() {
         onChange={event => updateFlightDraft(flight.id, 'duration', event.target.value)}
         className="min-w-0 bg-[var(--bg-primary)] border border-[var(--border)] px-2 py-1.5 text-xs text-[var(--text-primary)]"
            />
-           <select
-        aria-label={`${flight.id} status`}
-        value={flight.status}
-        onChange={event => updateFlightDraft(flight.id, 'status', event.target.value)}
-        className="min-w-0 bg-[var(--bg-primary)] border border-[var(--border)] px-2 py-1.5 text-xs text-[var(--text-primary)]"
-           >
-          <option>Planned</option>
-          <option>Pending</option>
-          <option>Confirmed</option>
-          <option>Delayed</option>
-          <option>Cancelled</option>
-           </select>
+           <div className="min-w-0 bg-[var(--bg-primary)] border border-[var(--border)] px-2 py-1.5 text-xs text-[var(--text-secondary)] italic">
+            Auto-Derived
+           </div>
             <button
             type="button"
             aria-label={`Remove ${flight.id}`}
@@ -557,7 +578,7 @@ export default function ExpeditionPlanner() {
          <button type="button" onClick={() => setIsScheduleEditing(false)} className="px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]">Cancel</button>
          <button
           type="button"
-          disabled={isPlannerSaving || new Set(flightDraft.map(flight => flight.id)).size !== flightDraft.length || flightDraft.some(flight => !flight.route.trim() || !flight.date || !Number.isFinite(flight.duration) || flight.duration < 1 || !['Planned', 'Pending', 'Confirmed', 'Delayed', 'Cancelled'].includes(flight.status))}
+          disabled={isPlannerSaving || new Set(flightDraft.map(flight => flight.id)).size !== flightDraft.length || flightDraft.some(flight => !flight.route.trim() || !flight.date || !Number.isFinite(flight.duration) || flight.duration < 1)}
           onClick={async () => {
            const result = await savePlannerFields({ charter_schedule: flightDraft });
            if (result) {
@@ -575,7 +596,7 @@ export default function ExpeditionPlanner() {
 
       <div className="text-[10px] text-[var(--text-secondary)] pt-3 border-t border-[var(--border)] font-mono flex justify-between">
        <span>Primary Air Corridor: Cape Town ↔ Schirmacher Oasis</span>
-       <span>Alternate: Christchurch (LC-130)</span>
+       <span>Alternate: Christchurch (INS Jalashwa)</span>
       </div>
      </div>
 

@@ -332,7 +332,7 @@ app.post('/api/v1/expeditions', async (req, res) => {
   res.json({ success: true, expedition: e });
 });
 app.patch('/api/v1/expeditions/:id', async (req, res) => {
-  const e = await Expedition.findOneAndUpdate({ expedition_id: req.params.id }, req.body, { new: true });
+  const e = await Expedition.findOneAndUpdate({ expedition_id: req.params.id }, req.body, { new: true, upsert: true });
   res.json({ success: true, expedition: e });
 });
 
@@ -679,7 +679,12 @@ app.post('/api/v1/cargo/verify-hash', async (req, res) => {
 });
 
 app.get('/api/v1/cargo/manifests/latest', async (req, res) => {
-  const latest = await Manifest.findOne({ crypto_hash: { $ne: null } }).sort({ sealed_at: -1 });
+  const filter = { crypto_hash: { $ne: null } };
+  if (req.query.station) {
+    // e.g., if station is 'bharati', match 'Bharati Station, Antarctica'
+    filter.destination = new RegExp(req.query.station, 'i');
+  }
+  const latest = await Manifest.findOne(filter).sort({ sealed_at: -1 });
   if (!latest) return res.status(404).json({ error: 'No sealed manifest found' });
   res.json(latest);
 });
