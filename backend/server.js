@@ -229,11 +229,92 @@ const researchCentersMemory = {
   himadri: { id: 'himadri', name: 'Himadri Station', coords: '78°55′N, 11°56′E', region: 'Ny-Ålesund, Svalbard', crew: 12, temp: -8, power: 99, status: 'Operational', alert: 'Low wind, clear Arctic conditions', leader: 'Dr. Helena Berg', summary: 'Arctic atmospheric research is in a favorable window, with excellent visibility and normal ventilation operations.', weather: { condition: 'Clear with low cloud cover', wind: 12, humidity: 62, visibility: '10.1 km', pressure: 1018, risk: 'Low' }, rosters: [ { name: 'Jonas Eriksen', role: 'Scientific Lead', shift: 'Day', status: 'On station' }, { name: 'Marta Novak', role: 'Ocean Sensors', shift: 'Day', status: 'Monitoring' }, { name: 'Keisuke Sato', role: 'Energy Systems', shift: 'Night', status: 'On call' }, { name: 'Alicia Moore', role: 'Field Technician', shift: 'Day', status: 'In field' } ], logistics: { batteryReserve: '89%', sensorHealth: 'Optimal', nextMaintenance: 'Thursday, 11:00 UTC', runwayStatus: 'Open' } }
 };
 
-app.get('/api/v1/research-centers', (_req, res) => res.json(Object.values(researchCentersMemory)));
-app.get('/api/v1/research-centers/:id', (req, res) => {
-  const center = researchCentersMemory[req.params.id];
-  if (!center) return res.status(404).json({ error: 'Research center not found' });
-  res.json(center);
+app.get('/api/v1/research-centers', async (_req, res) => {
+  try {
+    const centers = Object.values(researchCentersMemory);
+    const enhancedCenters = await Promise.all(centers.map(async (center) => {
+      const stationName = center.name.split(' ')[0]; // 'Maitri', 'Bharati', 'Himadri'
+      const crewCount = await User.countDocuments({ station: new RegExp(`^${stationName}$`, 'i') });
+      return { ...center, crew: crewCount };
+    }));
+    res.json(enhancedCenters);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch research centers' });
+  }
+});
+
+// GET /api/stations/:stationName/roster
+app.get('/api/stations/:stationName/roster', async (req, res) => {
+  try {
+    const { stationName } = req.params;
+    // Find all users deployed to this station (case-insensitive)
+    const roster = await User.find({
+      station: new RegExp(`^${stationName}$`, 'i')
+    }).select('name username role shift status department');
+
+    // Default missing names to username, and set defaults for mock roles
+    const mappedRoster = roster.map(r => ({
+      name: r.name || r.username,
+      role: r.role || 'Unassigned',
+      shift: r.shift || 'Dynamic',
+      status: r.status || 'Active'
+    }));
+
+    res.json({ success: true, roster: mappedRoster });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch station roster', error: error.message });
+  }
+});
+app.get('/api/v1/research-centers/:id', async (req, res) => {
+  try {
+    const center = researchCentersMemory[req.params.id];
+    if (!center) return res.status(404).json({ error: 'Research center not found' });
+    
+    const stationName = center.name.split(' ')[0];
+    const stationRegex = new RegExp(`^${stationName}$`, 'i');
+    
+    // Fetch users for roster
+    const users = await User.find({ station: stationRegex });
+    
+    // Determine leader
+    const leaderUser = users.find(u => 
+      u.role.toLowerCase() === 'commander' || 
+      u.role.toLowerCase() === 'station lead' || 
+      u.role.toLowerCase() === 'admin'
+    );
+    const leaderName = leaderUser ? leaderUser.name || leaderUser.username : 'Unassigned (Vacant)';
+    
+    // Map rosters
+    const rosters = users.map(u => ({
+      name: u.name || u.username,
+      role: u.role,
+      shift: 'Dynamic',
+      status: 'Active'
+    }));
+    
+    // Fetch logistics (items)
+    const items = await Item.find({ station: stationRegex });
+    const totalItems = items.length;
+    const criticalItems = items.filter(i => i.quantity <= i.critical_threshold).length;
+    
+    // Calculate mock battery reserve based on active items if no real telemetry
+    const logistics = {
+      batteryReserve: `${Math.max(50, 100 - criticalItems * 5)}%`,
+      sensorHealth: criticalItems === 0 ? 'Optimal' : (criticalItems < 3 ? 'Warning' : 'Critical'),
+      nextMaintenance: 'Dynamic based on stock',
+      runwayStatus: totalItems > 0 ? 'Open' : 'Restricted'
+    };
+    
+    res.json({
+      ...center,
+      leader: `Lead: ${leaderName}`,
+      rosters: rosters,
+      logistics: logistics,
+      crew: users.length
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch research center details' });
+  }
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

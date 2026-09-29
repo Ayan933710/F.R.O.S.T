@@ -51,6 +51,12 @@ export default function CommanderHistory() {
 
    {/* Timeline */}
    <div className="flex-1 overflow-y-auto space-y-0">
+    {historyEntries.length === 0 && (
+     <div className="py-12 flex flex-col items-center justify-center text-[var(--text-secondary)] opacity-70">
+      <Clock size={32} className="mb-3 opacity-50" />
+      <p className="text-sm font-semibold">Zero active records today.</p>
+     </div>
+    )}
     {historyEntries.map((entry, i) => {
      const Icon = entry.icon;
      return (

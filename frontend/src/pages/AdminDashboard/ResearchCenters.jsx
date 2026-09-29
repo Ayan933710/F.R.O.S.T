@@ -15,56 +15,109 @@ import {
 const API_BASE = 'http://localhost:5000/api/v1';
 
 function StationCard({ station, isSelected, onSelect }) {
-  const isCold = station.temp < -35;
+  const [liveTemp, setLiveTemp] = useState(null);
+
+  useEffect(() => {
+    let lat, lon;
+    if (station.id === 'maitri') { lat = -70.766; lon = 11.733; }
+    else if (station.id === 'bharati') { lat = -69.400; lon = 76.200; }
+    else if (station.id === 'himadri') { lat = 78.933; lon = 11.933; }
+
+    if (!lat || !lon) return;
+
+    let active = true;
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m`)
+      .then(res => res.json())
+      .then(data => {
+        if (active && data.current?.temperature_2m !== undefined) {
+          setLiveTemp(data.current.temperature_2m);
+        }
+      })
+      .catch(err => console.error('Failed to fetch live temp:', err));
+    
+    return () => { active = false; };
+  }, [station.id]);
+
+  const displayTemp = liveTemp !== null ? liveTemp : station.temp;
+
   return (
     <button
       type="button"
       onClick={() => onSelect(station.id)}
-      className={`w-full text-left bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] border rounded-lg p-4 flex flex-col gap-3 transition-all duration-300 ease-out cursor-pointer ${
+      className={`w-full h-full text-left bg-slate-900/70 border backdrop-blur-sm rounded-xl p-5 flex flex-col gap-5 transition-all duration-300 ease-out cursor-pointer ${
         isSelected
-          ? 'border-[var(--accent-primary)] shadow-[0_0_20px_rgba(59,130,246,0.15)] -translate-y-0.5'
-          : 'border-[var(--border)] hover:border-[var(--accent-primary)] hover:shadow-[0_0_20px_rgba(59,130,246,0.15)] hover:-translate-y-0.5'
+          ? 'border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.15)] -translate-y-0.5'
+          : 'border-cyan-500/20 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:-translate-y-0.5'
       }`}
     >
+      {/* Card Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="tracking-wide text-[var(--text-primary)] font-semibold text-base">{station.name}</h3>
-          <div className="flex items-center gap-1 mt-1">
-            <MapPin size={12} className="text-[var(--text-secondary)]" />
-            <span className="text-[var(--text-secondary)] text-xs">{station.coords}</span>
-          </div>
-          <p className="text-[var(--text-secondary)] text-xs mt-0.5">{station.region}</p>
+          <h3 className="tracking-widest text-white font-extrabold text-4xl uppercase font-['Space_Grotesk'] drop-shadow-md">{station.name}</h3>
+          <p className="text-cyan-400/80 text-sm mt-2 font-mono tracking-wide">{station.coords}</p>
+          <p className="text-cyan-400/80 text-sm mt-1 font-mono tracking-wide">{station.region}</p>
         </div>
-        <span className="text-[var(--ok)] text-xs font-semibold flex items-center gap-1">
-          <Activity size={12} />
-          {station.status}
-        </span>
+        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full shrink-0">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-emerald-400 text-[10px] font-bold tracking-wider uppercase">
+            {station.status}
+          </span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mt-1">
-        <div className="text-center bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] rounded px-2 py-2 border border-[var(--border)]">
-          <div className="flex items-center justify-center gap-1 mb-1">
-            <Users size={12} className="text-[var(--accent-primary)]" />
-            <span className="text-[var(--text-secondary)] text-[10px] uppercase tracking-wider">Crew</span>
+      {/* Metrics Section (Vertical Stack) */}
+      <div className="flex flex-col gap-3 mt-auto">
+        
+        {/* Row 1: Station Crew */}
+        <div className="bg-slate-800/40 border border-slate-700/40 rounded-lg p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users size={16} className="text-cyan-400" />
+            <span className="text-slate-300 text-xs font-semibold tracking-wider uppercase">Crew Complement</span>
           </div>
-          <p className="text-[var(--text-primary)] font-bold text-sm">{station.crew}</p>
-        </div>
-        <div className="text-center bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] rounded px-2 py-2 border border-[var(--border)]">
-          <div className="flex items-center justify-center gap-1 mb-1">
-            <Thermometer size={12} className={isCold ? 'text-[var(--accent-primary)]' : 'text-[var(--ok)]'} />
-            <span className="text-[var(--text-secondary)] text-[10px] uppercase tracking-wider">Temp</span>
+          <div className="text-slate-100 font-bold text-sm font-mono">
+            {station.crew} Assigned
           </div>
-          <p className={`font-bold text-sm ${isCold ? 'text-[var(--accent-primary)]' : 'text-[var(--text-primary)]'}`}>
-            {station.temp}°C
-          </p>
         </div>
-        <div className="text-center bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] rounded px-2 py-2 border border-[var(--border)]">
-          <div className="flex items-center justify-center gap-1 mb-1">
-            <Zap size={12} className="text-[var(--ok)]" />
-            <span className="text-[var(--text-secondary)] text-[10px] uppercase tracking-wider">Power</span>
+
+        {/* Row 2: Surface Temperature */}
+        <div className="bg-slate-800/40 border border-slate-700/40 rounded-lg p-3 flex items-center justify-between">
+          <div className="flex flex-col justify-center gap-1">
+            <div className="flex items-center gap-2">
+              <Thermometer size={16} className="text-cyan-400" />
+              <span className="text-slate-300 text-xs font-semibold tracking-wider uppercase">Surface Temp</span>
+            </div>
           </div>
-          <p className="text-[var(--ok)] font-bold text-sm">{station.power}%</p>
+          <div className="flex flex-col items-end justify-center">
+            <div className="text-slate-100 font-bold text-sm font-mono">
+              {liveTemp === null ? (
+                <span className="animate-pulse text-slate-500">--.-°C</span>
+              ) : (
+                `${displayTemp.toFixed(1)}°C`
+              )}
+            </div>
+            <span className="text-slate-500 text-[9px] uppercase tracking-widest mt-0.5">Live Open-Meteo</span>
+          </div>
         </div>
+
+        {/* Row 3: Power Grid Stability */}
+        <div className="bg-slate-800/40 border border-slate-700/40 rounded-lg p-3 flex flex-col gap-2">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2">
+              <Zap size={16} className="text-cyan-400" />
+              <span className="text-slate-300 text-xs font-semibold tracking-wider uppercase">Grid Stability</span>
+            </div>
+            <div className="text-cyan-400 font-bold text-sm font-mono">
+              {station.power}%
+            </div>
+          </div>
+          <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-cyan-400 rounded-full transition-all duration-500" 
+              style={{ width: `${station.power}%` }}
+            />
+          </div>
+        </div>
+
       </div>
     </button>
   );
@@ -72,20 +125,53 @@ function StationCard({ station, isSelected, onSelect }) {
 
 function DetailPanel({ station, onBack }) {
   const [liveWeather, setLiveWeather] = useState(null);
+  const [liveRoster, setLiveRoster] = useState([]);
+  const [rosterLoading, setRosterLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     const loadWeather = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/v1/aws/current?station=${station.id}`);
+        let lat, lon;
+        if (station.id === 'maitri') { lat = -70.766; lon = 11.733; }
+        else if (station.id === 'bharati') { lat = -69.400; lon = 76.200; }
+        else if (station.id === 'himadri') { lat = 78.933; lon = 11.933; }
+        
+        if (!lat || !lon) return;
+
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,visibility`;
+        const response = await fetch(url);
         const data = await response.json();
-        if (response.ok && active) setLiveWeather(data);
-      } catch (e) {}
+        if (active && data.current) setLiveWeather(data.current);
+      } catch (e) {
+        console.error('Failed to load detail weather', e);
+      }
     };
     loadWeather();
     const interval = setInterval(loadWeather, 15000);
     return () => { active = false; clearInterval(interval); };
   }, [station.id]);
+
+  useEffect(() => {
+    let active = true;
+    setRosterLoading(true);
+    const loadRoster = async () => {
+      try {
+        const stationName = station.name.split(' ')[0];
+        const res = await fetch(`http://localhost:5000/api/stations/${stationName}/roster`);
+        const data = await res.json();
+        if (active && data.success) {
+          setLiveRoster(data.roster);
+        }
+      } catch (e) {
+        console.error('Failed to load roster:', e);
+      } finally {
+        if (active) setRosterLoading(false);
+      }
+    };
+    loadRoster();
+    return () => { active = false; };
+  }, [station.name]);
 
   if (!station) return null;
 
@@ -98,39 +184,49 @@ function DetailPanel({ station, onBack }) {
         <div>
           <p className="text-[var(--text-secondary)] text-[10px] uppercase tracking-[0.2em]">Selected center</p>
           <h3 className="mt-2 text-[var(--text-primary)] font-['Space_Grotesk'] text-2xl font-bold">{station.name}</h3>
-          <p className="mt-1 text-[var(--text-secondary)] text-sm">{station.region}</p>
+          <p className="mt-1 text-[var(--text-secondary)] text-sm font-mono">{station.region}</p>
         </div>
         <div className="text-right">
           <div className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-1 text-[var(--ok)] text-xs font-semibold">
             <Activity size={12} />
             {station.status}
           </div>
-          <p className="mt-2 text-[var(--text-secondary)] text-xs">Lead: {station.leader}</p>
+          <p className="mt-2 text-[var(--text-secondary)] text-xs">{station.leader}</p>
         </div>
       </div>
 
       <div className="mt-5 grid grid-cols-1 lg:grid-cols-[1.3fr_0.7fr] gap-5">
         <div className="space-y-5">
-
-
           <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-panel)] p-4">
             <div className="flex items-center gap-2 text-[var(--accent-primary)] font-semibold text-sm uppercase tracking-[0.12em]">
               <Users size={15} />
               Active rosters
             </div>
             <div className="mt-4 space-y-2.5">
-              {station.rosters?.map((member) => (
-                <div key={member.name} className="flex items-center justify-between rounded-md border border-[var(--border)] bg-[var(--bg-panel-raised)] px-3 py-2">
-                  <div>
-                    <p className="text-[var(--text-primary)] text-sm font-medium">{member.name}</p>
-                    <p className="text-[var(--text-secondary)] text-xs">{member.role}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[var(--text-secondary)] text-[10px] uppercase tracking-[0.12em]">{member.shift}</p>
-                    <p className="text-[var(--ok)] text-xs font-medium">{member.status}</p>
-                  </div>
+              {rosterLoading ? (
+                <div className="text-center py-4">
+                  <p className="text-[var(--text-secondary)] text-sm animate-pulse">Loading roster feed...</p>
                 </div>
-              ))}
+              ) : liveRoster.length === 0 ? (
+                <div className="text-center py-6 px-4 bg-[var(--bg-panel-raised)] rounded-md border border-[var(--border)] border-dashed">
+                  <p className="text-[var(--text-secondary)] text-sm">
+                    No personnel actively deployed to this station. Assign team members via User Roster.
+                  </p>
+                </div>
+              ) : (
+                liveRoster.map((member) => (
+                  <div key={member.name} className="flex items-center justify-between rounded-md border border-[var(--border)] bg-[var(--bg-panel-raised)] px-3 py-2">
+                    <div>
+                      <p className="text-[var(--text-primary)] text-sm font-medium">{member.name}</p>
+                      <p className="text-[var(--text-secondary)] text-xs">{member.role}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[var(--text-secondary)] text-[10px] uppercase tracking-[0.12em]">{member.shift}</p>
+                      <p className="text-[var(--ok)] text-xs font-medium">{member.status}</p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -144,28 +240,38 @@ function DetailPanel({ station, onBack }) {
             <div className="mt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-[var(--text-secondary)] text-xs">Temp</span>
-                <span className="text-[var(--text-primary)] text-sm font-medium">{liveWeather?.temperature?.toFixed(1) || station.temp}°C</span>
+                <span className="text-[var(--text-primary)] text-sm font-medium font-mono">
+                  {liveWeather ? `${liveWeather.temperature_2m.toFixed(1)}°C` : '--.-°C'}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[var(--text-secondary)] text-xs">Wind</span>
-                <span className="text-[var(--text-primary)] text-sm font-medium">{liveWeather?.wind_kmh?.toFixed(0) || station.weather?.wind} km/h</span>
+                <span className="text-[var(--text-primary)] text-sm font-medium font-mono">
+                  {liveWeather ? `${liveWeather.wind_speed_10m.toFixed(1)} km/h` : '--'}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[var(--text-secondary)] text-xs">Humidity</span>
-                <span className="text-[var(--text-primary)] text-sm font-medium">{liveWeather?.humidity?.toFixed(0) || station.weather?.humidity}%</span>
+                <span className="text-[var(--text-primary)] text-sm font-medium font-mono">
+                  {liveWeather ? `${liveWeather.relative_humidity_2m.toFixed(0)}%` : '--'}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[var(--text-secondary)] text-xs">Visibility</span>
-                <span className="text-[var(--text-primary)] text-sm font-medium">{liveWeather?.visibility_km?.toFixed(1) || station.weather?.visibility} km</span>
+                <span className="text-[var(--text-primary)] text-sm font-medium font-mono">
+                  {liveWeather && liveWeather.visibility !== undefined ? `${(liveWeather.visibility / 1000).toFixed(1)} km` : '--'}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[var(--text-secondary)] text-xs">Pressure</span>
-                <span className="text-[var(--text-primary)] text-sm font-medium">{liveWeather?.pressure_hpa?.toFixed(0) || station.weather?.pressure} hPa</span>
+                <span className="text-[var(--text-primary)] text-sm font-medium font-mono">
+                  {liveWeather ? `${liveWeather.surface_pressure.toFixed(0)} hPa` : '--'}
+                </span>
               </div>
             </div>
             <div className="mt-4 flex items-center justify-between rounded-md border border-[var(--border)] bg-[var(--bg-panel-raised)] px-3 py-2">
               <span className="flex items-center gap-2 text-[var(--text-secondary)] text-xs"><Wind size={12} /> Live API Link</span>
-              <span className="text-[var(--ok)] font-semibold">{liveWeather ? 'Connected' : 'Connecting...'}</span>
+              <span className="text-[var(--ok)] font-semibold text-xs">{liveWeather ? 'Connected' : 'Connecting...'}</span>
             </div>
           </div>
 
@@ -177,24 +283,22 @@ function DetailPanel({ station, onBack }) {
             <div className="mt-4 space-y-3 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-[var(--text-secondary)]">Battery reserve</span>
-                <span className="text-[var(--text-primary)] font-medium">{station.logistics?.batteryReserve}</span>
+                <span className="text-[var(--text-primary)] font-medium font-mono">{station.logistics?.batteryReserve || '--'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[var(--text-secondary)]">Sensor health</span>
-                <span className="text-[var(--text-primary)] font-medium">{station.logistics?.sensorHealth}</span>
+                <span className="text-[var(--text-primary)] font-medium">{station.logistics?.sensorHealth || '--'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[var(--text-secondary)]">Next maintenance</span>
-                <span className="text-[var(--text-primary)] font-medium text-right">{station.logistics?.nextMaintenance}</span>
+                <span className="text-[var(--text-primary)] font-medium text-right">{station.logistics?.nextMaintenance || '--'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[var(--text-secondary)]">Runway status</span>
-                <span className="text-[var(--text-primary)] font-medium">{station.logistics?.runwayStatus}</span>
+                <span className="text-[var(--text-primary)] font-medium">{station.logistics?.runwayStatus || '--'}</span>
               </div>
             </div>
           </div>
-
-
         </div>
       </div>
     </div>
@@ -252,7 +356,7 @@ export default function ResearchCenters() {
               exit={{ opacity: 0, x: 20, scale: 0.98 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
             >
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
                 {stations.map((station) => (
                   <StationCard
                     key={station.id}

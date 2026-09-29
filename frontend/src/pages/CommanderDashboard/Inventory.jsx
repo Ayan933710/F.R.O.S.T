@@ -2,16 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wifi, Search, Plus, Minus, AlertCircle, Send, X, Clock, CloudOff, RefreshCw, CheckCircle, XCircle, Trash2, AlertTriangle } from 'lucide-react';
 
-const mockData = [
-  { id: 1, name: 'Aviation Turbine Fuel (ATF)', category: 'FUEL', qty: 15010, unit: 'Liters', shelfNumber: 'TNK-01', criticalThreshold: 2000 },
-  { id: 2, name: 'Epinephrine', category: 'MEDICAL', qty: 60, unit: 'Vials', shelfNumber: 'MED-A4', criticalThreshold: 10 },
-  { id: 3, name: 'Generator Bearings', category: 'TECHNICAL SPARES', qty: 12, unit: 'Units', warning: 'Will deplete in ≈12d — resupply in 45d', shelfNumber: 'ENG-B2', criticalThreshold: 5, leadTimeDays: 45 },
-  { id: 4, name: 'Freeze-Dried Rations', category: 'PERISHABLES', qty: 800, unit: 'Packs', shelfNumber: 'RTV-12', criticalThreshold: 200 },
-  { id: 5, name: 'Diesel (Ground Transport)', category: 'FUEL', qty: 8000, unit: 'Liters', shelfNumber: 'TNK-02', criticalThreshold: 1500 },
-  { id: 6, name: 'Ibuprofen Tablets', category: 'MEDICAL', qty: 450, unit: 'Tabs', shelfNumber: 'MED-A1', criticalThreshold: 50 },
-  { id: 7, name: 'Lithium Battery Packs', category: 'TECHNICAL SPARES', qty: 45, unit: 'Units', shelfNumber: 'ENG-C1' },
-  { id: 8, name: 'Potable Water Reserves', category: 'PERISHABLES', qty: 6500, unit: 'Liters', shelfNumber: 'TNK-03' },
-];
+const mockData = [];
 
 const API_BASE = 'http://localhost:5000/api/v1';
 const MOVEMENT_QUEUE_KEY = 'icenet.inventoryMovementQueue';
@@ -453,14 +444,26 @@ export default function CommanderInventory() {
       {/* Grid Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8 shrink-0">
         <AnimatePresence>
-          {filteredItems.map(item => (
-            <InventoryCard 
-              key={item.id} 
-              item={item} 
-              onRemove={handleRequestRemoveItem} 
-              onAdjust={handleAdjust} 
-            />
-          ))}
+          {filteredItems.length === 0 ? (
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              className="col-span-full py-16 flex flex-col items-center justify-center text-[var(--text-secondary)]"
+            >
+              <AlertCircle size={40} className="mb-4 opacity-50 text-[var(--accent-primary)]" />
+              <p className="text-sm font-semibold tracking-wide">Zero active items match your criteria.</p>
+              <p className="text-xs opacity-70 mt-1">Try adjusting your filters or adding a new item.</p>
+            </motion.div>
+          ) : (
+            filteredItems.map(item => (
+              <InventoryCard 
+                key={item.id} 
+                item={item} 
+                onRemove={handleRequestRemoveItem} 
+                onAdjust={handleAdjust} 
+              />
+            ))
+          )}
         </AnimatePresence>
       </div>
 
