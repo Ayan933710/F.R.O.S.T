@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Database, WifiOff, AlertTriangle, CheckCircle, Clock, Search, X, Satellite, MapPin } from 'lucide-react';
+import { Database, WifiOff, AlertTriangle, CheckCircle, Clock, Search, X, Satellite, MapPin, Activity } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function AdminInventory() {
   const [activeCenter, setActiveCenter] = useState('Himadri');
   const [inventoryData, setInventoryData] = useState({ Himadri: [], Bharati: [], Maitri: [] });
   const [reqQueue, setReqQueue] = useState({ Himadri: [], Bharati: [], Maitri: [] });
   const [outboundQueue, setOutboundQueue] = useState({ Himadri: [], Bharati: [], Maitri: [] });
+  const [mlInsights, setMlInsights] = useState({ Himadri: null, Bharati: null, Maitri: null });
   const [inventoryLoading, setInventoryLoading] = useState(false);
   const [inventoryError, setInventoryError] = useState('');
   const [requestError, setRequestError] = useState('');
@@ -16,11 +18,13 @@ export default function AdminInventory() {
     const loadStationData = async () => {
       setInventoryLoading(true);
       try {
-        const [forecastResponse, requisitionResponse] = await Promise.all([
+        const [forecastResponse, requisitionResponse, insightsResponse] = await Promise.all([
           fetch(`http://localhost:5000/api/v1/inventory/forecast?station=${activeCenter.toLowerCase()}`),
           fetch(`http://localhost:5000/api/v1/requisitions?station=${activeCenter.toLowerCase()}`),
+          fetch(`http://localhost:5000/api/v1/ml/insights?station=${activeCenter.toLowerCase()}`)
         ]);
-        const [forecast, requisitions] = await Promise.all([forecastResponse.json(), requisitionResponse.json()]);
+        const [forecast, requisitions, insights] = await Promise.all([forecastResponse.json(), requisitionResponse.json(), insightsResponse.json()]);
+        
         if (!forecastResponse.ok) throw new Error(forecast.error || 'Could not load station inventory');
         if (!requisitionResponse.ok) throw new Error(requisitions.error || 'Could not load requisitions');
         if (!active) return;
@@ -61,6 +65,11 @@ export default function AdminInventory() {
         }));
         setReqQueue(previous => ({ ...previous, [activeCenter]: pendingRequests }));
         setOutboundQueue(previous => ({ ...previous, [activeCenter]: decidedRequests }));
+        
+        if (insightsResponse.ok) {
+           setMlInsights(prev => ({ ...prev, [activeCenter]: insights }));
+        }
+
         setInventoryError('');
         setRequestError('');
       } catch (error) {
@@ -119,6 +128,7 @@ export default function AdminInventory() {
   const currentInventory = inventoryData[activeCenter];
   const currentReqs = reqQueue[activeCenter];
   const currentOutbound = outboundQueue[activeCenter];
+  const currentInsights = mlInsights[activeCenter];
 
   return (
     <div className="w-full h-full p-4 lg:p-8 overflow-y-auto font-['Work_Sans']">
@@ -165,13 +175,87 @@ export default function AdminInventory() {
 
       {inventoryError && <p role="alert" className="mb-4 text-xs text-[var(--critical)]">{inventoryError}</p>}
 
+      {/* ML Predictive Dashboard */}
+      <AnimatePresence mode="wait">
+        {currentInsights && (
+          <motion.div
+            key={`ml-${activeCenter}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-8 bg-[var(--bg-panel)] backdrop-blur-xl border border-[var(--border)] rounded-xl shadow-[var(--shadow-glass)] p-6 overflow-hidden relative"
+          >
+            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+              <Activity size={100} />
+            </div>
+            
+            <div className="flex items-center gap-2 mb-6">
+              <Activity size={20} className="text-purple-400" />
+              <h3 className="text-lg font-bold text-[var(--text-primary)] font-['Space_Grotesk']">Predictive Insights</h3>
+              <span className="ml-2 px-2 py-0.5 text-[9px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded uppercase tracking-wider">AI Powered</span>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 relative z-10">
+              <div className="col-span-1 lg:col-span-1 flex flex-col gap-4">
+                <div className="p-4 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg">
+                  <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider font-bold mb-1">Flight Viability</p>
+                  <p className={`text-xl font-black ${currentInsights.transport_viability?.safe ? 'text-[var(--ok)]' : 'text-[var(--critical)]'}`}>
+                    {currentInsights.transport_viability?.safe ? 'SAFE TO FLY' : 'GROUNDED'}
+                  </p>
+                  <p className="text-xs text-[var(--text-secondary)] mt-1 font-mono">
+                    Whiteout Prob: {((currentInsights.transport_viability?.probability || 0) * 100).toFixed(1)}%
+                  </p>
+                </div>
+                
+                <div className="p-4 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg">
+                  <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider font-bold mb-1">Aggregated Stock Level</p>
+                  <p className="text-2xl font-black text-[var(--text-primary)]">
+                    {currentInsights.projected_burn_rate?.[0]?.stock.toLocaleString() || '0'} <span className="text-sm text-[var(--text-secondary)]">units</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="col-span-1 lg:col-span-3 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg p-4 h-[250px]">
+                <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider font-bold mb-4">14-Day Projected Inventory Burn Rate</p>
+                <ResponsiveContainer width="100%" height="80%">
+                  <LineChart data={currentInsights.projected_burn_rate}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                    <XAxis 
+                      dataKey="day" 
+                      tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis 
+                      tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={40}
+                    />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'var(--bg-panel-raised)', borderColor: 'var(--border)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '12px' }}
+                      itemStyle={{ color: 'var(--accent-primary)' }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="stock" 
+                      stroke="var(--accent-primary)" 
+                      strokeWidth={3}
+                      dot={{ r: 4, fill: 'var(--bg-panel)', strokeWidth: 2 }}
+                      activeDot={{ r: 6, fill: 'var(--accent-primary)' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         {/* Module 1: Read-Only Inventory Mirror */}
         <div className="flex flex-col gap-6">
-          
-
-
           <motion.div 
             key={`mirror-${activeCenter}`}
             initial={{ opacity: 0, x: -20 }}
@@ -197,7 +281,7 @@ export default function AdminInventory() {
                 </thead>
                 <tbody>
                   {currentInventory.length === 0 && (
-                    <tr><td colSpan={5} className="py-8 text-center text-xs text-[var(--text-secondary)]">{inventoryLoading ? 'Loading station stock...' : 'No stock snapshots for this station yet.'}</td></tr>
+                    <tr><td colSpan={6} className="py-8 text-center text-xs text-[var(--text-secondary)]">{inventoryLoading ? 'Loading station stock...' : 'No stock snapshots for this station yet.'}</td></tr>
                   )}
                   {currentInventory.map(item => (
                     <tr key={item.id} className="border-b border-[var(--border)]/50 hover:bg-[var(--bg-panel-raised)] transition-colors">

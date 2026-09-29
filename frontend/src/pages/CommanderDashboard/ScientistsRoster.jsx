@@ -1,56 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { HeartPulse, User, ShieldCheck, Edit2, Plus, X, Upload, Trash2, AlertTriangle } from 'lucide-react';
 
-const initialScientists = [
- {
-  id: 1,
-  name: 'Dr. Elena Vasquez',
-  role: 'Lead Glaciologist',
-  department: 'Research',
-  bio: 'Expert in polar ice dynamics and climate change impacts.',
-  heartRate: 72,
-  temp: 36.6,
-  o2: 98,
-  status: 'normal',
-  imageUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300&h=300',
- },
- {
-  id: 2,
-  name: 'Dr. Raj Patel',
-  role: 'Atmospheric Physicist',
-  department: 'Atmospherics',
-  bio: 'Specializes in upper atmosphere composition and weather patterns.',
-  heartRate: 110,
-  temp: 38.1,
-  o2: 94,
-  status: 'elevated',
-  imageUrl: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=300&h=300',
- },
- {
-  id: 3,
-  name: 'Sgt. Nora Lindqvist',
-  role: 'Field Medic',
-  department: 'Medical',
-  bio: 'Experienced trauma medic with arctic survival training.',
-  heartRate: 65,
-  temp: 36.4,
-  o2: 99,
-  status: 'normal',
-  imageUrl: 'https://images.unsplash.com/photo-1594824436951-7f12bc00bc87?auto=format&fit=crop&q=80&w=300&h=300',
- },
- {
-  id: 4,
-  name: 'Eng. Kofi Mensah',
-  role: 'Power Systems Engineer',
-  department: 'Engineering',
-  bio: 'Maintains base reactor and renewable energy grid.',
-  heartRate: 78,
-  temp: 36.8,
-  o2: 97,
-  status: 'normal',
-  imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300&h=300',
- },
-];
+const initialScientists = [];
 
 function PersonnelCard({ person, onEdit }) {
  const isElevated = person.status === 'elevated';
@@ -101,21 +52,21 @@ function PersonnelCard({ person, onEdit }) {
      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--bg-panel-raised)] opacity-0 group-hover/vital:opacity-100 transition-opacity" />
      <p className="text-[var(--text-secondary)] text-[10px] uppercase tracking-wider mb-1 relative z-10">Heart</p>
      <p className={`font-bold text-lg relative z-10 ${isElevated ? 'text-[var(--critical)]' : 'text-[var(--ok)]'}`}>
-      {person.heartRate} <span className="text-xs font-normal opacity-70">bpm</span>
+      {person.heartRate || 72} <span className="text-xs font-normal opacity-70">bpm</span>
      </p>
     </div>
     <div className="text-center bg-[var(--bg-panel)] rounded-lg px-2 py-2 border border-[var(--border)] relative overflow-hidden group/vital">
      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--bg-panel-raised)] opacity-0 group-hover/vital:opacity-100 transition-opacity" />
      <p className="text-[var(--text-secondary)] text-[10px] uppercase tracking-wider mb-1 relative z-10">Temp</p>
-     <p className={`font-bold text-lg relative z-10 ${person.temp > 37.5 ? 'text-[var(--critical)]' : 'text-[var(--text-primary)]'}`}>
-      {person.temp}°C
+     <p className={`font-bold text-lg relative z-10 ${person.temp && person.temp > 37.5 ? 'text-[var(--critical)]' : 'text-[var(--text-primary)]'}`}>
+      {person.temp || 36.6}°C
      </p>
     </div>
     <div className="text-center bg-[var(--bg-panel)] rounded-lg px-2 py-2 border border-[var(--border)] relative overflow-hidden group/vital">
      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--bg-panel-raised)] opacity-0 group-hover/vital:opacity-100 transition-opacity" />
      <p className="text-[var(--text-secondary)] text-[10px] uppercase tracking-wider mb-1 relative z-10">SpO₂</p>
-     <p className={`font-bold text-lg relative z-10 ${person.o2 < 95 ? 'text-[var(--critical)]' : 'text-[var(--text-primary)]'}`}>
-      {person.o2}%
+     <p className={`font-bold text-lg relative z-10 ${person.o2 && person.o2 < 95 ? 'text-[var(--critical)]' : 'text-[var(--text-primary)]'}`}>
+      {person.o2 || 98}%
      </p>
     </div>
    </div>
@@ -200,7 +151,7 @@ function ScientistFormModal({ isOpen, onClose, onSave, onDelete, initialData }) 
   name: '',
   role: '',
   department: '',
-  bio: '',
+  specialization: '',
   imageUrl: ''
  });
  const fileInputRef = useRef(null);
@@ -209,9 +160,13 @@ function ScientistFormModal({ isOpen, onClose, onSave, onDelete, initialData }) 
  useEffect(() => {
   setShowPhotoConfirm(false);
   if (initialData) {
-   setFormData(initialData);
+   setFormData({
+    ...initialData,
+    department: initialData.team || '',
+    specialization: initialData.specialization || ''
+   });
   } else {
-   setFormData({ name: '', role: '', department: '', bio: '', imageUrl: '' });
+   setFormData({ name: '', role: '', department: '', specialization: '', imageUrl: '' });
   }
  }, [initialData, isOpen]);
 
@@ -358,7 +313,7 @@ function ScientistFormModal({ isOpen, onClose, onSave, onDelete, initialData }) 
       {initialData ? (
        <button 
         type="button"
-        onClick={() => onDelete(initialData.id)}
+        onClick={() => onDelete(initialData.id || initialData.personnel_id)}
         className="px-3 py-2 rounded-lg text-sm font-medium text-[var(--critical)] hover:bg-[var(--critical)]/10 transition-colors flex items-center gap-2"
        >
         <Trash2 size={16} />
@@ -406,37 +361,80 @@ export default function ScientistsRoster() {
   setIsModalOpen(true);
  };
 
- const handleSaveScientist = (scientistData) => {
-  if (editingPerson) {
-   setRoster(prev => prev.map(p => p.id === scientistData.id ? scientistData : p));
-  } else {
-   const newScientist = {
-    ...scientistData,
-    id: Date.now(),
-    heartRate: Math.floor(Math.random() * (90 - 60 + 1)) + 60,
-    temp: (Math.random() * (37.2 - 36.1) + 36.1).toFixed(1),
-    o2: Math.floor(Math.random() * (100 - 95 + 1)) + 95,
-    status: 'normal'
-   };
-   setRoster(prev => [newScientist, ...prev]);
+ useEffect(() => {
+  const fetchRoster = async () => {
+   try {
+    const res = await fetch('http://localhost:5000/api/v1/roster');
+    if (res.ok) {
+     const data = await res.json();
+     setRoster(data);
+    }
+   } catch (e) {
+    console.error('Failed to fetch roster:', e);
+   }
+  };
+  fetchRoster();
+ }, []);
+
+ const handleSaveScientist = async (scientistData) => {
+  const payload = {
+   name: scientistData.name,
+   role: scientistData.role,
+   team: scientistData.department,
+   specialization: scientistData.bio,
+  };
+
+  try {
+   if (editingPerson) {
+    const res = await fetch(`http://localhost:5000/api/v1/roster/${editingPerson.personnel_id}`, {
+     method: 'PATCH',
+     headers: { 'Content-Type': 'application/json' },
+     body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+     const updated = await res.json();
+     setRoster(prev => prev.map(p => p.personnel_id === updated.personnel.personnel_id ? updated.personnel : p));
+    }
+   } else {
+    const res = await fetch('http://localhost:5000/api/v1/roster', {
+     method: 'POST',
+     headers: { 'Content-Type': 'application/json' },
+     body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+     const created = await res.json();
+     setRoster(prev => [created.personnel, ...prev]);
+    }
+   }
+  } catch (e) {
+   console.error('Failed to save scientist:', e);
   }
   setIsModalOpen(false);
  };
 
  const handleRequestDelete = (id) => {
-  const person = roster.find(p => p.id === id);
+  const person = roster.find(p => p.id === id || p.personnel_id === id);
   if (person) {
    setPersonToDelete(person);
    setIsDeleteModalOpen(true);
   }
  };
 
- const handleConfirmDelete = () => {
+ const handleConfirmDelete = async () => {
   if (personToDelete) {
-   setRoster(prev => prev.filter(p => p.id !== personToDelete.id));
+   try {
+    const res = await fetch(`http://localhost:5000/api/v1/roster/${personToDelete.personnel_id}`, {
+     method: 'DELETE'
+    });
+    if (res.ok) {
+     setRoster(prev => prev.filter(p => p.personnel_id !== personToDelete.personnel_id));
+    }
+   } catch (e) {
+    console.error('Failed to delete scientist:', e);
+   }
    setIsDeleteModalOpen(false);
    setPersonToDelete(null);
-   setIsModalOpen(false); // Close the edit modal as well
+   setIsModalOpen(false);
   }
  };
 
@@ -477,7 +475,7 @@ export default function ScientistsRoster() {
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 flex-1 relative z-10 overflow-y-auto pr-2 pb-4">
      {roster.map((person) => (
       <PersonnelCard 
-       key={person.id} 
+       key={person.id || person.personnel_id} 
        person={person} 
        onEdit={handleOpenEdit}
       />

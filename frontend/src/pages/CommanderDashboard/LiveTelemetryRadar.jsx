@@ -29,33 +29,43 @@ export default function LiveTelemetryRadar() {
 
  // Real-Time 1000ms telemetry data stream
  useEffect(() => {
+  let ws = new WebSocket('ws://localhost:5000/telemetry');
+  
+  ws.onmessage = (event) => {
+   try {
+    const msg = JSON.parse(event.data);
+    if (msg.type === 'telemetry') {
+     const { temp, power, time } = msg.data;
+     if (temp !== undefined && power !== undefined) {
+      setData((prev) => {
+       const newPoint = { time: time || new Date().toLocaleTimeString('en-GB'), temp, power };
+       return [...prev.slice(1), newPoint];
+      });
+      if (power < 85) setSystemStatus('CRITICAL');
+      else setSystemStatus('NOMINAL');
+     }
+    }
+   } catch (e) {}
+  };
+
   const interval = setInterval(() => {
    const now = new Date();
    const timeStr = now.toLocaleTimeString('en-GB');
-
-   // Random temperature between -42 and -48
    const temp = Number((-42 - Math.random() * 6).toFixed(1));
-
-   // Occasional power dip (< 85)
    const hasPowerDip = Math.random() > 0.95;
    const power = hasPowerDip ? 75 : Math.round(88 + Math.random() * 12);
 
-   const newPoint = {
-    time: timeStr,
-    temp,
-    power,
-   };
-
-   setData((prev) => [...prev.slice(1), newPoint]);
-
-   if (power < 85) {
-    setSystemStatus('CRITICAL');
-   } else {
-    setSystemStatus('NOMINAL');
-   }
+   fetch('http://localhost:5000/api/v1/telemetry/ingest', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ temp, power, time: timeStr, node_id: 'radar-1', status: power < 85 ? 'CRITICAL' : 'NOMINAL' })
+   }).catch(() => {}); // ignore fetch errors to avoid spamming console
   }, 1000);
 
-  return () => clearInterval(interval);
+  return () => {
+   clearInterval(interval);
+   if (ws.readyState === 1) ws.close();
+  };
  }, []);
 
  const latestPoint = data[data.length - 1] || { temp: -45, power: 95 };

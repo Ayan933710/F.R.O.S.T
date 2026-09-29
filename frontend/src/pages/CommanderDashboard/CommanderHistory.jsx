@@ -1,14 +1,6 @@
 import { Clock, Zap, PackageCheck, Radio, Thermometer, Shield, AlertTriangle } from 'lucide-react';
 
-const historyEntries = [
- { time: '09:15', action: 'Transmitted CRITICAL requisition for 500x Aviation Turbine Fuel (ATF) via SATCOM uplink.', icon: Radio, severity: 'warning' },
- { time: '08:47', action: 'Received Admin approval for 12x Seismic Sensors. Inbound dispatch logged.', icon: Shield, severity: 'normal' },
- { time: '08:00', action: 'Adjusted local inventory count via Edge Node: Aviation Turbine Fuel (ATF) [-50 Liters].', icon: Zap, severity: 'warning' },
- { time: '07:30', action: 'Successfully verified inbound Cargo Manifest (Hash: 0x9f8b7e2c) at Bay 3-Alpha.', icon: PackageCheck, severity: 'normal' },
- { time: '07:12', action: 'Inventory sync completed.', icon: Shield, severity: 'normal' },
- { time: '06:45', action: 'Adjusted local inventory count via Edge Node: Epinephrine [+10 Vials].', icon: Zap, severity: 'normal' },
- { time: '06:00', action: 'Satellite Link severed (Blackout Window). Store & Forward queue activated.', icon: AlertTriangle, severity: 'critical' },
-];
+import { useState, useEffect } from 'react';
 
 const severityColors = {
  normal:  'text-[var(--ok)]',
@@ -23,6 +15,31 @@ const severityBorder = {
 };
 
 export default function CommanderHistory() {
+ const [station] = useState(() => localStorage.getItem('activeStation') || 'maitri');
+ const [historyEntries, setHistoryEntries] = useState([]);
+
+ useEffect(() => {
+  const fetchLogs = async () => {
+   try {
+    const res = await fetch('http://localhost:5000/api/v1/audit');
+    if (res.ok) {
+     const data = await res.json();
+     setHistoryEntries(data.filter(log => log.metadata?.commanderId === `CMD-${station.toUpperCase()}`).map(log => ({
+      time: new Date(log.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+      action: log.action,
+      icon: log.category === 'Inventory Request' ? Radio : log.category === 'Transport' ? PackageCheck : Zap,
+      severity: log.severity === 'info' ? 'normal' : log.severity === 'warning' ? 'warning' : 'critical'
+     })));
+    }
+   } catch (e) {
+    console.error('Failed to fetch audit logs:', e);
+   }
+  };
+  fetchLogs();
+  const interval = setInterval(fetchLogs, 12000);
+  return () => clearInterval(interval);
+ }, [station]);
+
  return (
   <div className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] rounded-xl p-6 min-h-full flex flex-col">
    <h2 className="text-[var(--accent-primary)] font-['Space_Grotesk'] font-bold text-2xl tracking-wide mb-2">

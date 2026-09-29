@@ -309,29 +309,52 @@ export default function ExpeditionPlanner() {
   setDraftManifest({ ...draftManifest, items: draftManifest.items.filter((_, i) => i !== idx) });
  };
 
- const handleConfirmSeal = () => {
+ const handleConfirmSeal = async () => {
   setIsSealing(true);
-  setTimeout(() => {
-   const chars = '0123456789abcdef';
-   let hash = '';
-   for (let i = 0; i < 64; i++) hash += chars[Math.floor(Math.random() * chars.length)];
-   
-   const newManifest = {
-    hash,
+  try {
+   const manifest_id = `MAN-${Date.now()}`;
+   const payload = {
+    manifest_id,
     destination: draftManifest.destination + ' Station, Antarctica',
     vessel: draftManifest.vessel,
-    items: [...draftManifest.items],
-    timestamp: new Date().toLocaleString(),
-    sealedBy: 'AdminHQ'
+    items: draftManifest.items,
+    vessel_mmsi: '123456789'
    };
    
-   setSealedManifests([newManifest, ...sealedManifests]);
-   setSealedManifestHash(hash);
+   await fetch('http://localhost:5000/api/v1/cargo/manifest', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+   });
+   
+   const sealRes = await fetch(`http://localhost:5000/api/v1/cargo/manifest/${manifest_id}/seal`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+   });
+   
+   if (sealRes.ok) {
+    const sealData = await sealRes.json();
+    const hash = sealData.crypto_hash;
+    const newManifest = {
+     hash,
+     destination: payload.destination,
+     vessel: payload.vessel,
+     items: [...payload.items],
+     timestamp: new Date().toLocaleString(),
+     sealedBy: 'AdminHQ'
+    };
+    
+    setSealedManifests([newManifest, ...sealedManifests]);
+    setSealedManifestHash(hash);
+   }
+  } catch (error) {
+   console.error('Failed to seal manifest:', error);
+  } finally {
    setIsSealing(false);
    setIsSealModalOpen(false);
    setSealStep('CREATE');
    setDraftManifest({ destination: 'Himadri', vessel: 'Icebreaker SA Agulhas', items: [{ name: 'Seismic Sensors', qty: 12, unit: 'Units' }] });
-  }, 1500);
+  }
  };
 
  return (

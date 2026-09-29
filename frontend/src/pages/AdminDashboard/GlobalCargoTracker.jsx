@@ -98,6 +98,39 @@ export default function GlobalCargoTracker() {
  const [selectedVessel, setSelectedVessel] = useState(null);
  const [isPinging, setIsPinging] = useState(false);
  const [pingSuccess, setPingSuccess] = useState(false);
+ const [activeShipments, setActiveShipments] = useState(shipments);
+
+ useEffect(() => {
+  fetch('http://localhost:5000/api/v1/cargo/manifests')
+   .then(res => res.json())
+   .then(data => {
+    if (data && data.length > 0) {
+     const mapped = data.map((m, i) => {
+      const destName = (m.destination || '').toLowerCase();
+      const destCoords = destName.includes('bharati') ? [76.1, -69.4] : 
+                         destName.includes('maitri') ? [11.8, -70.7] : [11.9, 78.9];
+      const isDelivered = m.status === 'Delivered (Base)';
+      
+      return {
+       id: m.manifest_id,
+       vessel: m.vessel || `Vessel ${i+1}`,
+       cargo: 'Sealed Cargo',
+       destination: m.destination || 'Unknown',
+       eta: new Date(m.created_at).toLocaleDateString(),
+       status: m.status === 'Draft' ? 'Delayed' : isDelivered ? 'Docked' : 'In Transit',
+       start: [-40, -30],
+       current: isDelivered ? destCoords : [-40, -50],
+       end: destCoords,
+       heading: isDelivered ? '000° Docked' : '184° S',
+       speed: isDelivered ? '0.0 knots' : '14.2 knots',
+       manifest: Array.isArray(m.items) ? m.items.map(item => `${item.qty} ${item.unit} ${item.name}`) : []
+      };
+     });
+     setActiveShipments(mapped);
+    }
+   })
+   .catch(err => console.error('Failed to fetch manifests:', err));
+ }, []);
 
  const handlePingAIS = () => {
   setIsPinging(true);
@@ -123,7 +156,7 @@ export default function GlobalCargoTracker() {
     <div className="flex items-center gap-2 bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] px-4 py-2 rounded-lg border border-[var(--border)]">
      <Ship size={16} className="text-[var(--accent-primary)]" />
      <span className="text-[var(--text-secondary)] text-sm">
-      Active Vessels: <span className="text-[var(--text-primary)] font-bold">{shipments.length}</span>
+      Active Vessels: <span className="text-[var(--text-primary)] font-bold">{activeShipments.length}</span>
      </span>
     </div>
     <div className="flex items-center gap-2 bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] px-4 py-2 rounded-lg border border-[var(--border)]">
@@ -131,7 +164,7 @@ export default function GlobalCargoTracker() {
      <span className="text-[var(--text-secondary)] text-sm">
       Docked:{' '}
       <span className="text-[var(--ok)] font-bold">
-       {shipments.filter((s) => s.status === 'Docked').length}
+       {activeShipments.filter((s) => s.status === 'Docked').length}
       </span>
      </span>
     </div>
@@ -140,7 +173,7 @@ export default function GlobalCargoTracker() {
      <span className="text-[var(--text-secondary)] text-sm">
       Delayed:{' '}
       <span className="text-[var(--critical)] font-bold">
-       {shipments.filter((s) => s.status === 'Delayed').length}
+       {activeShipments.filter((s) => s.status === 'Delayed').length}
       </span>
      </span>
     </div>
@@ -190,7 +223,7 @@ export default function GlobalCargoTracker() {
      </Geographies>
 
      {/* Planned Trajectory Lines */}
-    {shipments.map((ship) => (
+    {activeShipments.map((ship) => (
      <g key={`route-${ship.vessel}`}>
       <Line
        from={ship.start}
@@ -217,7 +250,7 @@ export default function GlobalCargoTracker() {
     ))}
 
      {/* Interactive Vessel Markers */}
-     {shipments.map((ship) => {
+     {activeShipments.map((ship) => {
       const isDelayed = ship.status === 'Delayed';
 
       return (
@@ -306,7 +339,7 @@ export default function GlobalCargoTracker() {
       </tr>
      </thead>
      <tbody>
-      {shipments.map((s, i) => {
+      {activeShipments.map((s, i) => {
        const isSelected = selectedVessel?.vessel === s.vessel;
        return (
         <tr

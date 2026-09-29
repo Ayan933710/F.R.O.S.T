@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
  Scan,
@@ -15,12 +15,6 @@ import {
 } from 'lucide-react';
 import { useIceNet } from '../../context/IceNetContext';
 
-const manifestItems = [
- { item: 'Cold-Climate Medical Kits', expected: 50, scanned: 48, critical: true },
- { item: 'SX1262 LoRa Mesh Nodes', expected: 100, scanned: 100, critical: false },
- { item: 'Lithium Iron Phosphate Packs', expected: 200, scanned: 200, critical: false },
- { item: 'High-Calorie Polar Rations', expected: 300, scanned: 295, critical: true },
-];
 
 export default function ArrivalCargoScanner() {
  const { sealedManifestHash } = useIceNet();
@@ -28,31 +22,68 @@ export default function ArrivalCargoScanner() {
  const [isScanning, setIsScanning] = useState(false);
  const [verifyResult, setVerifyResult] = useState(null); // null | 'match' | 'mismatch'
  const [shakeKey, setShakeKey] = useState(0);
+ const [activeManifest, setActiveManifest] = useState(null);
+ const [manifestItems, setManifestItems] = useState([]);
+ const [expectedHash, setExpectedHash] = useState('');
+
+ useEffect(() => {
+  const fetchManifest = async () => {
+   try {
+    const res = await fetch('http://localhost:5000/api/v1/cargo/manifests/latest');
+    if (res.ok) {
+     const data = await res.json();
+     setActiveManifest(data);
+     setExpectedHash(data.crypto_hash || '');
+     if (data.items) {
+      setManifestItems(data.items.map(item => ({
+       item: item.name,
+       expected: item.qty,
+       scanned: item.qty, // Mock scanned count
+       critical: false
+      })));
+     }
+    }
+   } catch (e) {
+    console.error('Failed to fetch latest manifest', e);
+   }
+  };
+  fetchManifest();
+ }, []);
 
  const executeVerify = async (inputToTest) => {
   const value = (inputToTest !== undefined ? inputToTest : payloadInput).trim();
   if (!value) return;
 
   try {
-    const latestRes = await fetch('http://localhost:5000/api/v1/cargo/manifests/latest');
-    if (!latestRes.ok) throw new Error('No sealed manifest found');
-    const latestManifest = await latestRes.json();
-
+    const manifest_id = activeManifest ? activeManifest.manifest_id : null;
+    if (!manifest_id) throw new Error('No active manifest to verify');
+    
     const verifyRes = await fetch('http://localhost:5000/api/v1/cargo/verify-hash', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ manifest_id: latestManifest.manifest_id, scanned_hash: value })
+      body: JSON.stringify({ manifest_id, scanned_hash: value })
     });
     
     const verifyData = await verifyRes.json();
     if (verifyRes.ok && verifyData.matches) {
       setVerifyResult('match');
+      // If matches, update manifest status to Delivered (Base)
+      await fetch(`http://localhost:5000/api/v1/cargo/manifest/${manifest_id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Delivered (Base)' })
+      });
     } else {
       setVerifyResult('mismatch');
       setShakeKey((prev) => prev + 1);
+      if (manifestItems.length > 0) {
+        const tamperedItems = [...manifestItems];
+        tamperedItems[0].scanned = tamperedItems[0].expected - 2; // Mock a mismatch delta
+        setManifestItems(tamperedItems);
+      }
     }
   } catch (error) {
-    if (sealedManifestHash && value === sealedManifestHash) {
+    if (expectedHash && value === expectedHash) {
      setVerifyResult('match');
     } else {
      setVerifyResult('mismatch');
@@ -64,11 +95,16 @@ export default function ArrivalCargoScanner() {
  const handleSimulateHardwareScan = (match = true) => {
   setIsScanning(true);
   setVerifyResult(null);
+  
+  if (manifestItems.length > 0) {
+    // Reset scanned to expected
+    setManifestItems(manifestItems.map(item => ({...item, scanned: item.expected})));
+  }
 
   setTimeout(() => {
    setIsScanning(false);
    const targetHash = match
-    ? sealedManifestHash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+    ? expectedHash || sealedManifestHash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
     : 'tampered-payload-hash-d7a8e2b9c0f41289ae39fb21980';
    setPayloadInput(targetHash);
    executeVerify(targetHash);
@@ -100,7 +136,7 @@ export default function ArrivalCargoScanner() {
     Expected Manifest Hash
       </span>
      </div>
-     {sealedManifestHash ? (
+     {expectedHash || sealedManifestHash ? (
       <span className="text-[10px] text-[var(--ok)] bg-[var(--ok)]/10 border border-[var(--ok)] px-2 py-0.5 rounded font-mono font-bold">
     HASH AVAILABLE
       </span>
@@ -112,7 +148,7 @@ export default function ArrivalCargoScanner() {
     </div>
 
     <p className="text-[var(--text-primary)] font-mono text-xs break-all leading-relaxed bg-[var(--bg-primary)] p-2.5 rounded border border-[var(--border)] select-all">
-    {sealedManifestHash || 'No manifest hash loaded'}
+    {expectedHash || sealedManifestHash || 'No reference hash loaded'}
     </p>
    </div>
 
@@ -261,7 +297,7 @@ export default function ArrivalCargoScanner() {
         </div>
         <div>
          <h3 className="text-[var(--ok)] font-['Space_Grotesk'] font-bold text-xl tracking-wide">
-          HASH MATCH
+          MANIFEST VERIFIED - INTEGRITY CONFIRMED
          </h3>
          <p className="text-[var(--text-secondary)] text-xs mt-0.5">
           Scanned payload matches the loaded reference hash.
@@ -305,7 +341,7 @@ export default function ArrivalCargoScanner() {
           Expected Hash:
          </span>
          <p className="text-[var(--ok)] break-all text-[11px]">
-          {sealedManifestHash || 'No reference hash loaded'}
+          {expectedHash || sealedManifestHash || 'No reference hash loaded'}
          </p>
         </div>
         <div className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] p-3 rounded-lg border border-[var(--critical)]/50">

@@ -17,78 +17,7 @@ import {
  FileText,
 } from 'lucide-react';
 
-const initialLogs = [
- {
-  id: 'REQ-8f92a',
-  timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-  category: 'Inventory Request',
-  action: 'Commander 1 (Bharati) requested 500 Liters of Aviation Turbine Fuel',
-  severity: 'info',
-  metadata: {
-   adminId: 'Pending Review',
-   commanderId: 'CMD-BHARATI',
-   requestDetails: 'Critical supply for backup generator',
-   status: 'Pending',
-   signatureHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-  },
- },
- {
-  id: 'REQ-7c42b',
-  timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-  category: 'Inventory Request',
-  action: 'Commander 2 (Maitri) requested 12 Units of Generator Bearings',
-  severity: 'info',
-  metadata: {
-   adminId: 'GOA-HQ-01',
-   commanderId: 'CMD-MAITRI',
-   requestDetails: 'Routine maintenance parts replacement',
-   status: 'Approved',
-   signatureHash: '9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b',
-  },
- },
- {
-  id: 'EMG-5d33c',
-  timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-  category: 'Emergency SOS',
-  action: 'Commander 3 (Himadri) initiated LoRa SOS Protocol',
-  severity: 'critical',
-  metadata: {
-   adminId: 'GOA-HQ-01',
-   commanderId: 'CMD-HIMADRI',
-   requestDetails: 'Extreme katabatic storm, comms disrupted. SOS relayed via LoRa mesh.',
-   status: 'Acknowledged',
-   signatureHash: '4f5e6d7c8b9a0f1e2d3c4b5a6f7e8d9c0b1a2f3e4d5c6b7a8f9e0d1c2b3a4f5e',
-  },
- },
- {
-  id: 'REQ-3a21d',
-  timestamp: new Date(Date.now() - 1000 * 60 * 315).toISOString(),
-  category: 'Inventory Request',
-  action: 'Commander 1 (Bharati) requested 100 Vials of Epinephrine',
-  severity: 'warning',
-  metadata: {
-   adminId: 'GOA-MED-04',
-   commanderId: 'CMD-BHARATI',
-   requestDetails: 'Stockpile already exceeds maximum allowed quota',
-   status: 'Denied',
-   signatureHash: '8b7a6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b2c1d0e9f8a7b',
-  },
- },
- {
-  id: 'REQ-1f04e',
-  timestamp: new Date(Date.now() - 1000 * 60 * 600).toISOString(),
-  category: 'Inventory Request',
-  action: 'Commander 2 (Maitri) requested 50 Packs of Freeze-Dried Rations',
-  severity: 'info',
-  metadata: {
-   adminId: 'GOA-HQ-01',
-   commanderId: 'CMD-MAITRI',
-   requestDetails: 'Monthly ration resupply for remote expedition team',
-   status: 'Approved',
-   signatureHash: '1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b',
-  },
- },
-];
+const initialLogs = [];
 
 const categoryIcons = {
  'Inventory Request': Box,
@@ -120,42 +49,21 @@ export default function AdminHistory() {
  const [expandedLogId, setExpandedLogId] = useState(null);
  const [exportedStatus, setExportedStatus] = useState(false);
 
- // Live Log Simulation: Generates new interaction log every 12 seconds
  useEffect(() => {
-  const automatedActions = [
-   'Commander 1 (Bharati) requested 200 Liters of Aviation Turbine Fuel',
-   'Commander 2 (Maitri) requested 5 Units of Medical Kits',
-   'Emergency SOS acknowledged by Commander 3 (Himadri)',
-   'Admin approved 50 Packs of Freeze-Dried Rations for Commander 1',
-   'Admin denied 10 Units of Lithium Battery Packs for Commander 2 (Exceeds quota)',
-  ];
+  const fetchLogs = async () => {
+   try {
+    const res = await fetch('http://localhost:5000/api/v1/audit');
+    if (res.ok) {
+     const data = await res.json();
+     setLogs(data);
+    }
+   } catch (e) {
+    console.error('Failed to fetch audit logs:', e);
+   }
+  };
 
-  const interval = setInterval(() => {
-   const randomAction =
-    automatedActions[Math.floor(Math.random() * automatedActions.length)];
-   const randomId = (randomAction.includes('SOS') ? 'EMG-' : 'REQ-') + Math.random().toString(36).substring(2, 7);
-   const randomHash = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-
-   const newLog = {
-    id: randomId,
-    timestamp: new Date().toISOString(),
-    category: randomAction.includes('SOS') ? 'Emergency SOS' : 'Inventory Request',
-    action: randomAction,
-    severity: randomAction.includes('SOS') ? 'critical' : randomAction.includes('denied') ? 'warning' : 'info',
-    metadata: {
-     adminId: randomAction.startsWith('Admin') ? 'GOA-HQ-01' : 'Pending Review',
-     commanderId: randomAction.includes('Commander 1') ? 'CMD-BHARATI' : randomAction.includes('Commander 2') ? 'CMD-MAITRI' : 'CMD-HIMADRI',
-     requestDetails: 'Auto-generated interaction payload',
-     status: randomAction.includes('SOS') ? 'Acknowledged' : randomAction.includes('approved') ? 'Approved' : randomAction.includes('denied') ? 'Denied' : 'Pending',
-     signatureHash: randomHash,
-    },
-   };
-
-   setLogs((prev) => [newLog, ...prev.slice(0, 49)]); // keep up to 50 logs
-  }, 12000);
-
+  fetchLogs();
+  const interval = setInterval(fetchLogs, 12000);
   return () => clearInterval(interval);
  }, []);
 
@@ -178,8 +86,8 @@ export default function AdminHistory() {
   const matchesSearch =
    log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
    log.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-   log.metadata.adminId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-   log.metadata.signatureHash.toLowerCase().includes(searchQuery.toLowerCase());
+   log.metadata?.adminId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+   log.metadata?.signatureHash?.toLowerCase().includes(searchQuery.toLowerCase());
   return matchesCategory && matchesSearch;
  });
 
