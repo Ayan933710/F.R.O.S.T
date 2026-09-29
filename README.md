@@ -1,4 +1,4 @@
-# ❄️ HEEM_SANCHAR / ICE-NET (F.R.O.S.T)
+# ❄️ F.R.O.S.T
 > **Integrated Polar Expedition Logistics and Asset Management System**
 
 ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
@@ -10,7 +10,7 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=FastAPI&logoColor=white)
 ![Yjs](https://img.shields.io/badge/Yjs-CRDT-blue?style=for-the-badge)
 
-F.R.O.S.T (Forward Resupply & Operations Support Terminal) ICE-NET is a resilient, offline-capable 3-tier micro-architecture platform designed for extreme-climate or tactical logistics tracking. It ensures seamless supply requisition, cold-chain inventory monitoring, and collaborative real-time updates across multiple research stations (e.g., Maitri, Bharati, Himadri) even in low-bandwidth or disconnected environments.
+F.R.O.S.T (Forward Resupply & Operations Support Terminal) is a resilient, offline-capable 3-tier micro-architecture platform designed for extreme-climate or tactical logistics tracking. It ensures seamless supply requisition, cold-chain inventory monitoring, and collaborative real-time updates across multiple research stations (e.g., Maitri, Bharati, Himadri) even in low-bandwidth or disconnected environments.
 
 ---
 
