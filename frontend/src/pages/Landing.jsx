@@ -60,11 +60,10 @@ export default function Landing() {
      F.R.O.S.T
     </div>
 
-    {/* Center Links */}
     <div className="hidden md:flex items-center gap-8 text-sm font-medium tracking-wide text-[var(--text-secondary)]">
      <motion.a href="#features" onClick={handleScroll('features')} whileHover={{ scale: 1.08 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} className="hover:text-[var(--accent-primary)] duration-0 cursor-pointer">FEATURES</motion.a>
-     <motion.a href="#workflow" onClick={handleScroll('workflow')} whileHover={{ scale: 1.08 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} className="hover:text-[var(--accent-primary)] duration-0 cursor-pointer">WORKFLOW</motion.a>
      <motion.a href="#hardware" onClick={handleScroll('hardware')} whileHover={{ scale: 1.08 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} className="hover:text-[var(--accent-primary)] duration-0 cursor-pointer">HARDWARE</motion.a>
+     <motion.a href="#workflow" onClick={handleScroll('workflow')} whileHover={{ scale: 1.08 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} className="hover:text-[var(--accent-primary)] duration-0 cursor-pointer">WORKFLOW</motion.a>
     </div>
 
     {/* Right Actions */}
@@ -487,14 +486,16 @@ export default function Landing() {
    {/* ═══════════════════════════════════════════════════════════
      6. FOOTER
      ═══════════════════════════════════════════════════════════ */}
-   <footer className="w-full bg-transparent pt-0 pb-8 px-6 relative z-20">
-    {/* Gradient divider line */}
-    <div className="w-full h-px bg-gradient-to-r from-transparent via-blue-900/50 to-transparent mb-16"></div>
-    <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+   <footer className="w-full bg-[var(--bg-panel)] relative z-20 overflow-hidden pt-12 pb-8 px-6 border-t border-[var(--border)] shadow-[0_-10px_30px_rgba(0,0,0,0.2)]">
+    {/* Glowing background effects */}
+    <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[var(--accent-primary)]/5 rounded-full blur-[120px] pointer-events-none"></div>
+    <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-blue-600/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+    <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16 relative z-10">
      {/* Brand Col */}
      <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2 font-['Bebas_Neue'] text-2xl text-[var(--text-primary)] tracking-widest">
-       <Compass size={24} className="text-[var(--accent-primary)]" />
+      <div className="flex items-center gap-2 font-['Bebas_Neue'] text-3xl text-[var(--text-primary)] tracking-widest drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">
+       <Compass size={28} className="text-[var(--accent-primary)] animate-pulse" />
        F.R.O.S.T
       </div>
       <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
@@ -505,46 +506,51 @@ export default function Landing() {
 
      {/* Platform Links */}
      <div className="flex flex-col gap-4">
-      <h4 className="font-['Bebas_Neue'] text-lg text-[var(--text-primary)] tracking-widest mb-2">PLATFORM</h4>
-      <a href="#features" onClick={handleScroll('features')} className="text-sm text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors cursor-pointer w-fit">Features & Tiers</a>
-      <a href="#workflow" onClick={handleScroll('workflow')} className="text-sm text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors cursor-pointer w-fit">Mission Workflow</a>
-      <a href="#hardware" onClick={handleScroll('hardware')} className="text-sm text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors cursor-pointer w-fit">Hardware Specs</a>
-      <span onClick={() => navigate('/login')} className="text-sm text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors cursor-pointer w-fit">Commander Login</span>
+      <h4 className="font-['Bebas_Neue'] text-xl text-[var(--text-primary)] tracking-widest mb-2 border-b border-[var(--accent-primary)]/20 pb-2 w-fit">PLATFORM</h4>
+      <a href="#features" onClick={handleScroll('features')} className="text-sm text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-all hover:translate-x-1 cursor-pointer w-fit">Features & Tiers</a>
+      <a href="#workflow" onClick={handleScroll('workflow')} className="text-sm text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-all hover:translate-x-1 cursor-pointer w-fit">Mission Workflow</a>
+      <a href="#hardware" onClick={handleScroll('hardware')} className="text-sm text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-all hover:translate-x-1 cursor-pointer w-fit">Hardware Specs</a>
+      <span onClick={() => navigate('/login')} className="text-sm text-[var(--accent-primary)] hover:text-[var(--text-primary)] font-semibold transition-all hover:translate-x-1 cursor-pointer w-fit flex items-center gap-2">
+        Commander Login <ChevronRight size={14} />
+      </span>
      </div>
 
      {/* Legal & Info */}
      <div className="flex flex-col gap-4">
-      <h4 className="font-['Bebas_Neue'] text-lg text-[var(--text-primary)] tracking-widest mb-2">LEGAL & INFO</h4>
+      <h4 className="font-['Bebas_Neue'] text-xl text-[var(--text-primary)] tracking-widest mb-2 border-b border-[var(--accent-primary)]/20 pb-2 w-fit">LEGAL & INFO</h4>
       <a href="#" className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors w-fit">About Project</a>
       <a href="#" className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors w-fit">Disclaimer</a>
       <a href="#" className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors w-fit">Privacy Policy</a>
       <a href="#" className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors w-fit">Terms of Service</a>
      </div>
 
-     {/* Contact */}
+     {/* Developed By */}
      <div className="flex flex-col gap-4">
-      <h4 className="font-['Bebas_Neue'] text-lg text-[var(--text-primary)] tracking-widest mb-2">COMMAND HQ</h4>
+      <h4 className="font-['Bebas_Neue'] text-xl text-[var(--accent-primary)] tracking-widest mb-2 drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">DEVELOPED BY</h4>
       <div className="text-sm text-[var(--text-secondary)] flex flex-col gap-1">
-       <span className="text-[var(--text-primary)]">NCPOR Base</span>
-       <span>Headland Sada, Vasco da Gama</span>
-       <span>Goa 403804, India</span>
+       <span className="text-[var(--text-primary)] font-bold text-base tracking-wide">Team HackCypher</span>
+       <span className="text-[var(--text-secondary)] font-medium">Heritage Institute of Technology</span>
+       <span className="text-xs opacity-75">Kolkata, India</span>
       </div>
-      <a href="mailto:comms@heem-sanchar.gov.in" className="text-sm text-[var(--accent-primary)] hover:text-[var(--text-primary)] transition-colors w-fit mt-2">
-       comms@heem-sanchar.gov.in
+      <a href="mailto:hackcypher2025@gmail.com" className="group text-sm mt-3 flex items-center gap-2 bg-[var(--bg-primary)] border border-[var(--border)] px-4 py-2 rounded-lg hover:border-[var(--accent-primary)] hover:shadow-[0_0_15px_rgba(6,182,212,0.2)] transition-all w-fit">
+       <div className="text-[var(--accent-primary)] group-hover:scale-110 transition-transform">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+       </div>
+       <span className="text-[var(--text-primary)] group-hover:text-[var(--accent-primary)] transition-colors">hackcypher2025@gmail.com</span>
       </a>
      </div>
     </div>
 
     {/* Bottom Bar */}
-    <div className="max-w-6xl mx-auto pt-8 flex flex-col md:flex-row items-center justify-between gap-6 text-xs font-mono text-[var(--text-secondary)] relative">
+    <div className="max-w-6xl mx-auto pt-6 flex flex-col md:flex-row items-center justify-between gap-6 text-xs font-mono text-[var(--text-secondary)] relative z-10">
      {/* Bottom gradient divider */}
-     <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-900/40 to-transparent"></div>
+     <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--accent-primary)]/30 to-transparent"></div>
      <div>
-      &copy; {new Date().getFullYear()} F.R.O.S.T / SIH 2026. All rights reserved.
+      &copy; {new Date().getFullYear()} F.R.O.S.T. Built with ❄️ by <span className="text-[var(--accent-primary)]">Team HackCypher</span>.
      </div>
-     <div className="flex items-center gap-3">
+     <div className="flex items-center gap-3 bg-[var(--bg-primary)] border border-[var(--border)] px-3 py-1.5 rounded-full">
       <div className="w-2 h-2 rounded-full bg-[var(--ok)] animate-pulse shadow-[0_0_8px_var(--ok)]"></div>
-      <span className="text-[var(--ok)] font-bold tracking-wider">ALL SYSTEMS NOMINAL</span>
+      <span className="text-[var(--ok)] font-bold tracking-wider text-[10px]">ALL SYSTEMS NOMINAL</span>
      </div>
     </div>
    </footer>
