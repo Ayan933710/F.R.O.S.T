@@ -44,17 +44,7 @@ F.R.O.S.T is engineered for two primary operational profiles, ensuring streamlin
 - **Responsive Mobile-First Tailwind UI:** Fluid, cyber-tactical interface that degrades gracefully into app-like bottom navigation bars for mobile fieldwork.
 - **Open-Meteo External API Integrations:** Live meteorological telemetry streaming surface temperature, wind speed, relative humidity, and pressure directly into the operational cards.
 
-## 📸 Visual Showcase
 
-> [!NOTE] 
-> Insert GIF of the Admin 3-Column Research Centers Overview here
-
-> [!NOTE] 
-> Insert Screenshot of the Commander's Live Telemetry Radar here
-
-> [!NOTE] 
-> Insert GIF of the dynamic Open-Meteo Weather Integration here
-=======
 
 ## 🗺️ System Workflow & User Journey
 
