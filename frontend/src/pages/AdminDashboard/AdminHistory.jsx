@@ -191,9 +191,6 @@ export default function AdminHistory() {
      <h2 className="text-[var(--accent-primary)] font-['Space_Grotesk'] font-bold text-2xl tracking-wide">
       HISTORY · CRYPTOGRAPHIC AUDIT LEDGER
      </h2>
-     <p className="text-[var(--text-secondary)] text-xs font-['Work_Sans']">
-      Immutable SHA-256 Action Ledger · Multi-Party Signatures · Live Automated Sync
-     </p>
     </div>
 
     <div className="flex items-center gap-3">

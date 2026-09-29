@@ -4,7 +4,7 @@ import joblib
 import pandas as pd
 import os
 
-app = FastAPI(title="ICE-NET PGML Transport Predictor")
+app = FastAPI(title="F.R.O.S.T PGML Transport Predictor")
 
 MODEL_PATH = "xgboost_model.joblib"
 model = None

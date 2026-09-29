@@ -14,7 +14,7 @@ import {
  Compass,
  CheckCircle,
 } from 'lucide-react';
-import { ComposableMap, Geographies, Geography, Marker, Line } from 'react-simple-maps';
+import { ComposableMap, Geographies, Geography, Graticule, Marker, Line } from 'react-simple-maps';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const geoUrl = 'https://unpkg.com/world-atlas@2.0.2/countries-110m.json';
@@ -147,36 +147,41 @@ export default function GlobalCargoTracker() {
    </div>
 
    {/* GIS Tactical Map with Radar Sweep Effect */}
-   <div className="w-full h-[500px] mb-8 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg overflow-hidden relative">
-    {/* Subtle pulsing radial gradient simulating radar sweep */}
+   <div
+    className="cargo-map-surface w-full h-[500px] mb-8 border border-[var(--border)] rounded-lg overflow-hidden relative"
+    role="img"
+    aria-label="World map showing cargo vessel routes and current locations"
+   >
+    <div className="cargo-map-grid absolute inset-0 pointer-events-none" />
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
      <motion.div
-      className="w-full h-full opacity-20"
+      className="cargo-map-radar w-full h-full"
       style={{
        background:
-        'radial-gradient(circle at center, rgba(59, 130, 246, 0.3) 0%, rgba(59, 130, 246, 0.08) 45%, transparent 75%)',
+        'radial-gradient(ellipse at 50% 58%, rgba(45, 165, 221, 0.2) 0%, rgba(27, 104, 163, 0.08) 42%, transparent 72%)',
       }}
-      animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.3, 0.15] }}
-      transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+      animate={{ opacity: [0.45, 0.85, 0.45] }}
+      transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
      />
     </div>
 
     <ComposableMap
-     projectionConfig={{ scale: 180 }}
+     projectionConfig={{ scale: 180, center: [0, 4] }}
      style={{ width: '100%', height: '100%' }}
     >
+     <Graticule stroke="#4e89ae" strokeWidth={0.35} strokeOpacity={0.3} />
      <Geographies geography={geoUrl}>
       {({ geographies }) =>
        geographies.map((geo) => (
         <Geography
          key={geo.rsmKey}
          geography={geo}
-         fill="#1F2937"
-         stroke="#374151"
-         strokeWidth={0.5}
+         fill="#193653"
+         stroke="#456b89"
+         strokeWidth={0.55}
          style={{
           default: { outline: 'none' },
-          hover: { outline: 'none', fill: '#374151' },
+          hover: { outline: 'none', fill: '#285477', stroke: '#91d8f4' },
           pressed: { outline: 'none' },
          }}
         />
@@ -185,16 +190,31 @@ export default function GlobalCargoTracker() {
      </Geographies>
 
      {/* Planned Trajectory Lines */}
-     {shipments.map((ship) => (
+    {shipments.map((ship) => (
+     <g key={`route-${ship.vessel}`}>
       <Line
-       key={`line-${ship.vessel}`}
        from={ship.start}
        to={ship.end}
-       stroke="var(--text-secondary)"
-       strokeDasharray="4 4"
+       stroke="#85a9c2"
+       strokeOpacity={0.3}
+       strokeDasharray="2 7"
        strokeWidth={1}
       />
-     ))}
+      <Line
+       className="cargo-route-flow"
+       from={ship.start}
+       to={ship.current}
+       stroke={markerFill(ship.status)}
+       strokeOpacity={0.92}
+       strokeDasharray="3 7"
+       strokeLinecap="round"
+       strokeWidth={1.8}
+      />
+      <Marker coordinates={ship.end}>
+       <circle r={3.5} fill="#071526" stroke={markerFill(ship.status)} strokeWidth={1.5} />
+      </Marker>
+     </g>
+    ))}
 
      {/* Interactive Vessel Markers */}
      {shipments.map((ship) => {
@@ -214,21 +234,30 @@ export default function GlobalCargoTracker() {
         {/* Large, forgiving hit area */}
         <circle r={20} fill="transparent" style={{ cursor: 'pointer' }} />
 
-        {/* Pulse ring for delayed vessels */}
+        {/* Soft status halo and stronger pulse for delayed vessels */}
+        <motion.circle
+         r={isDelayed ? 10 : 8}
+         fill={markerFill(ship.status)}
+         fillOpacity={0.2}
+         animate={{ scale: isDelayed ? [1, 1.8, 1] : [1, 1.35, 1], opacity: [0.55, 0.12, 0.55] }}
+         transition={{ repeat: Infinity, duration: isDelayed ? 1.5 : 3.2, ease: 'easeInOut' }}
+         style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+        />
         {isDelayed && (
          <motion.circle
-          r={8}
+          r={12}
           fill="var(--critical)"
           fillOpacity={0.35}
-          animate={{ r: [8, 16, 8], opacity: [0.8, 0.15, 0.8] }}
+          animate={{ scale: [1, 1.75, 1], opacity: [0.7, 0.12, 0.7] }}
           transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
+          style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
          />
         )}
 
         {/* Visual dot with hover scaling */}
         <motion.circle
-         r={6}
-         whileHover={{ scale: 1.5 }}
+         r={selectedVessel?.vessel === ship.vessel ? 7.5 : 6}
+         whileHover={{ scale: 1.6 }}
          fill={
           ship.status === 'Docked'
            ? 'var(--ok)'
@@ -236,6 +265,8 @@ export default function GlobalCargoTracker() {
            ? 'var(--critical)'
            : 'var(--accent-primary)'
          }
+         stroke="#e5f6ff"
+         strokeWidth={1.25}
          style={{ cursor: 'pointer' }}
         />
 
@@ -248,6 +279,9 @@ export default function GlobalCargoTracker() {
           fontSize: '12px',
           fontWeight: 'bold',
           fontFamily: 'Work Sans',
+          paintOrder: 'stroke',
+          stroke: '#071526',
+          strokeWidth: 3,
           pointerEvents: 'none',
          }}
         >

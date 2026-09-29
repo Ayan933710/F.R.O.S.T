@@ -1,17 +1,83 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wifi, Search, Plus, Minus, AlertCircle, Send, X, Clock, CloudOff, RefreshCw, CheckCircle, XCircle, Trash2, AlertTriangle } from 'lucide-react';
 
 const mockData = [
-  { id: 1, name: 'Aviation Turbine Fuel (ATF)', category: 'FUEL', qty: 15010, unit: 'Liters', shelfNumber: 'TNK-01' },
-  { id: 2, name: 'Epinephrine', category: 'MEDICAL', qty: 60, unit: 'Vials', shelfNumber: 'MED-A4' },
-  { id: 3, name: 'Generator Bearings', category: 'TECHNICAL SPARES', qty: 12, unit: 'Units', warning: 'Will deplete in ≈12d — resupply in 45d', shelfNumber: 'ENG-B2' },
-  { id: 4, name: 'Freeze-Dried Rations', category: 'PERISHABLES', qty: 800, unit: 'Packs', shelfNumber: 'RTV-12' },
-  { id: 5, name: 'Diesel (Ground Transport)', category: 'FUEL', qty: 8000, unit: 'Liters', shelfNumber: 'TNK-02' },
-  { id: 6, name: 'Ibuprofen Tablets', category: 'MEDICAL', qty: 450, unit: 'Tabs', shelfNumber: 'MED-A1' },
+  { id: 1, name: 'Aviation Turbine Fuel (ATF)', category: 'FUEL', qty: 15010, unit: 'Liters', shelfNumber: 'TNK-01', criticalThreshold: 2000 },
+  { id: 2, name: 'Epinephrine', category: 'MEDICAL', qty: 60, unit: 'Vials', shelfNumber: 'MED-A4', criticalThreshold: 10 },
+  { id: 3, name: 'Generator Bearings', category: 'TECHNICAL SPARES', qty: 12, unit: 'Units', warning: 'Will deplete in ≈12d — resupply in 45d', shelfNumber: 'ENG-B2', criticalThreshold: 5, leadTimeDays: 45 },
+  { id: 4, name: 'Freeze-Dried Rations', category: 'PERISHABLES', qty: 800, unit: 'Packs', shelfNumber: 'RTV-12', criticalThreshold: 200 },
+  { id: 5, name: 'Diesel (Ground Transport)', category: 'FUEL', qty: 8000, unit: 'Liters', shelfNumber: 'TNK-02', criticalThreshold: 1500 },
+  { id: 6, name: 'Ibuprofen Tablets', category: 'MEDICAL', qty: 450, unit: 'Tabs', shelfNumber: 'MED-A1', criticalThreshold: 50 },
   { id: 7, name: 'Lithium Battery Packs', category: 'TECHNICAL SPARES', qty: 45, unit: 'Units', shelfNumber: 'ENG-C1' },
   { id: 8, name: 'Potable Water Reserves', category: 'PERISHABLES', qty: 6500, unit: 'Liters', shelfNumber: 'TNK-03' },
 ];
+
+const API_BASE = 'http://localhost:5000/api/v1';
+const MOVEMENT_QUEUE_KEY = 'icenet.inventoryMovementQueue';
+let movementSyncPromise = null;
+
+function readMovementQueue() {
+  try {
+    return JSON.parse(localStorage.getItem(MOVEMENT_QUEUE_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function flushMovementQueue() {
+  if (movementSyncPromise) return movementSyncPromise;
+
+  movementSyncPromise = (async () => {
+    while (true) {
+      const [movement, ...remaining] = readMovementQueue();
+      if (!movement) break;
+
+      try {
+        const response = await fetch(`${API_BASE}/inventory/movements`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(movement),
+        });
+        if (!response.ok) break;
+        const currentQueue = readMovementQueue();
+        localStorage.setItem(
+          MOVEMENT_QUEUE_KEY,
+          JSON.stringify(currentQueue.filter(queued => queued.client_event_id !== movement.client_event_id))
+        );
+      } catch {
+        break;
+      }
+    }
+  })().finally(() => {
+    movementSyncPromise = null;
+  });
+
+  return movementSyncPromise;
+}
+
+function queueMovement(station, item, quantityDelta, stockAfter, movementType) {
+  const clientEventId = globalThis.crypto?.randomUUID?.()
+    || `${station}-${item.id}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const movement = {
+    client_event_id: clientEventId,
+    station,
+    item_id: String(item.id),
+    name: item.name,
+    category: item.category,
+    unit: item.unit,
+    quantity_delta: quantityDelta,
+    stock_after: stockAfter,
+    movement_type: movementType || (quantityDelta === 0 ? 'snapshot' : quantityDelta < 0 ? 'consumption' : 'restock'),
+    critical_threshold: item.criticalThreshold,
+    lead_time_days: item.leadTimeDays,
+    unit_cost: item.unitCost,
+    recorded_at: new Date().toISOString(),
+  };
+
+  localStorage.setItem(MOVEMENT_QUEUE_KEY, JSON.stringify([...readMovementQueue(), movement]));
+  void flushMovementQueue();
+}
 
 function InventoryCard({ item, onRemove, onAdjust }) {
   const [draftQty, setDraftQty] = useState('');
@@ -24,7 +90,7 @@ function InventoryCard({ item, onRemove, onAdjust }) {
   const handleApplyAdd = () => {
     const val = parseInt(draftQty);
     if (!isNaN(val) && val !== 0) {
-      onAdjust(item.id, Math.abs(val));
+      onAdjust(item.id, Math.abs(val), 'restock');
       setDraftQty('');
     }
   };
@@ -32,7 +98,7 @@ function InventoryCard({ item, onRemove, onAdjust }) {
   const handleApplyRemove = () => {
     const val = parseInt(draftQty);
     if (!isNaN(val) && val !== 0) {
-      onAdjust(item.id, -Math.abs(val));
+      onAdjust(item.id, -Math.abs(val), 'consumption');
       setDraftQty('');
     }
   };
@@ -102,9 +168,59 @@ function InventoryCard({ item, onRemove, onAdjust }) {
 }
 
 export default function CommanderInventory() {
-  const [items, setItems] = useState(mockData);
+  const [station] = useState(() => localStorage.getItem('activeStation') || 'maitri');
+  const [items, setItems] = useState(() => {
+    try {
+      const savedItems = localStorage.getItem(`icenet.inventory.${station}`);
+      return savedItems ? JSON.parse(savedItems) : mockData;
+    } catch {
+      return mockData;
+    }
+  });
   const [activeTab, setActiveTab] = useState('All');
   const [search, setSearch] = useState('');
+  const [runwayItems, setRunwayItems] = useState([]);
+  const [runwayError, setRunwayError] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem(`icenet.inventory.${station}`, JSON.stringify(items));
+  }, [items, station]);
+
+  useEffect(() => {
+    const snapshotKey = `icenet.inventorySnapshot.${station}.${new Date().toISOString().slice(0, 10)}`;
+    if (!localStorage.getItem(snapshotKey)) {
+      localStorage.setItem(snapshotKey, 'recorded');
+      items.forEach(item => queueMovement(station, item, 0, item.qty));
+    }
+
+    void flushMovementQueue();
+    window.addEventListener('online', flushMovementQueue);
+    return () => window.removeEventListener('online', flushMovementQueue);
+  }, [station]);
+
+  useEffect(() => {
+    let active = true;
+    const loadRunway = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/inventory/forecast?station=${encodeURIComponent(station)}`);
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not load stock outlook');
+        if (active) {
+          setRunwayItems(result.items || []);
+          setRunwayError('');
+        }
+      } catch (error) {
+        if (active) setRunwayError(error.message || 'Could not load stock outlook');
+      }
+    };
+
+    loadRunway();
+    const refreshTimer = setInterval(loadRunway, 15000);
+    return () => {
+      active = false;
+      clearInterval(refreshTimer);
+    };
+  }, [station]);
 
   // Add Item Modal State
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
@@ -118,6 +234,7 @@ export default function CommanderInventory() {
       qty: Number(newItemData.qty)
     };
     setItems([newItem, ...items]);
+    queueMovement(station, newItem, 0, newItem.qty);
     setIsAddItemModalOpen(false);
     setNewItemData({ name: '', category: 'FUEL', qty: '', unit: '', warning: '', shelfNumber: '' });
   };
@@ -139,6 +256,7 @@ export default function CommanderInventory() {
   const handleConfirmDelete = (e) => {
     e.preventDefault();
     if (deleteConfirmText === 'REMOVE' && itemToDelete) {
+      queueMovement(station, itemToDelete, -itemToDelete.qty, 0, 'disposal');
       setItems(items.filter(item => item.id !== itemToDelete.id));
       setIsDeleteModalOpen(false);
       setItemToDelete(null);
@@ -156,62 +274,95 @@ export default function CommanderInventory() {
   const [syncState, setSyncState] = useState('IDLE');
 
   // Status Log State
-  const [reqHistory, setReqHistory] = useState([
-    { id: 102, item: 'Seismic Sensors', qty: 12, unit: 'Units', urgency: 'ROUTINE', status: 'PENDING_APPROVAL', time: new Date(Date.now() - 3600000).toLocaleTimeString() },
-    { id: 101, item: 'Medical Kits (Trauma)', qty: 5, unit: 'Units', urgency: 'CRITICAL', status: 'ACKNOWLEDGED', time: new Date(Date.now() - 86400000).toLocaleTimeString() }
-  ]);
+  const [reqHistory, setReqHistory] = useState([]);
+  const [requisitionError, setRequisitionError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    const loadRequisitions = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/requisitions?station=${encodeURIComponent(station)}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Could not load requisitions');
+        if (active) {
+          setReqHistory(data.map(req => ({
+            id: req.requisition_id,
+            item: req.item,
+            qty: req.quantity,
+            unit: req.unit,
+            urgency: req.urgency,
+            status: req.status,
+            time: new Date(req.created_at).toLocaleTimeString(),
+          })));
+          setRequisitionError('');
+        }
+      } catch (error) {
+        if (active) setRequisitionError(error.message || 'Could not load requisitions');
+      }
+    };
+
+    loadRequisitions();
+    const refreshTimer = setInterval(loadRequisitions, 15000);
+    return () => {
+      active = false;
+      clearInterval(refreshTimer);
+    };
+  }, [station]);
 
   const tabs = ['All', 'Fuel', 'Medical', 'Technical Spares', 'Perishables'];
 
-  const handleAdjust = (id, amount) => {
-    setItems(items.map(item => item.id === id ? { ...item, qty: Math.max(0, item.qty + amount) } : item));
+  const handleAdjust = (id, amount, movementType) => {
+    const item = items.find(existingItem => existingItem.id === id);
+    if (!item) return;
+    const stockAfter = Math.max(0, item.qty + amount);
+    const quantityDelta = stockAfter - item.qty;
+    if (quantityDelta === 0) return;
+
+    setItems(items.map(existingItem => existingItem.id === id ? { ...existingItem, qty: stockAfter } : existingItem));
+    queueMovement(station, item, quantityDelta, stockAfter, movementType);
   };
 
-  const updateReqStatus = (reqId, newStatus, delay) => {
-    setTimeout(() => {
-      setReqHistory(prev => prev.map(r => r.id === reqId ? { ...r, status: newStatus } : r));
-    }, delay);
-  };
-
-  const handleRequisition = (e) => {
+  const handleRequisition = async (e) => {
     e.preventDefault();
     const finalAsset = reqAsset === 'OTHER' ? customAsset : reqAsset;
     if (!finalAsset || !reqQty) return;
     
     setSyncState('SYNCING');
+    setRequisitionError('');
     
     const matched = items.find(i => i.name === reqAsset);
     const unit = matched ? matched.unit : (reqAsset === 'OTHER' ? 'Units' : '');
     
-    setTimeout(() => {
+    try {
+      const response = await fetch(`${API_BASE}/requisitions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ station, item: finalAsset, quantity: Number(reqQty), unit, urgency: reqUrgency }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not submit requisition');
+
+      const req = result.requisition;
+      setReqHistory(previous => [{
+        id: req.requisition_id,
+        item: req.item,
+        qty: req.quantity,
+        unit: req.unit,
+        urgency: req.urgency,
+        status: req.status,
+        time: new Date(req.created_at).toLocaleTimeString(),
+      }, ...previous]);
       setSyncState('QUEUED');
-      
-      const newReq = {
-        id: Date.now(),
-        item: finalAsset,
-        qty: reqQty,
-        unit: unit,
-        urgency: reqUrgency,
-        status: 'QUEUED_LOCALLY',
-        time: new Date().toLocaleTimeString()
-      };
-      
-      setReqHistory(prev => [newReq, ...prev]);
-
-      updateReqStatus(newReq.id, 'IN_TRANSIT_UNCONFIRMED', 4000);
-      updateReqStatus(newReq.id, 'PENDING_APPROVAL', 8000);
-      updateReqStatus(newReq.id, 'DECISION_IN_TRANSIT', 14000);
-      updateReqStatus(newReq.id, 'ACKNOWLEDGED', 20000);
-
-      setTimeout(() => {
-        setSyncState('IDLE');
-        setReqAsset('');
-        setCustomAsset('');
-        setReqQty('');
-        setReqUrgency('ROUTINE');
-        setIsModalOpen(false);
-      }, 1500);
-    }, 1500);
+      setTimeout(() => setSyncState('IDLE'), 1200);
+      setReqAsset('');
+      setCustomAsset('');
+      setReqQty('');
+      setReqUrgency('ROUTINE');
+      setIsModalOpen(false);
+    } catch (error) {
+      setSyncState('IDLE');
+      setRequisitionError(error.message || 'Could not submit requisition');
+    }
   };
 
   const filteredItems = items.filter(item => {
@@ -235,6 +386,8 @@ export default function CommanderInventory() {
         return { label: 'Decision In Transit (Sync Pending)', icon: RefreshCw, color: 'text-teal-400', bg: 'bg-teal-500/10 border-teal-500/30' };
       case 'ACKNOWLEDGED':
         return { label: 'Decision Acknowledged by Edge Node', icon: CheckCircle, color: 'text-[var(--ok)]', bg: 'bg-[var(--ok)]/10 border-[var(--ok)]/30' };
+      case 'APPROVED':
+        return { label: 'Approved by Admin', icon: CheckCircle, color: 'text-[var(--ok)]', bg: 'bg-[var(--ok)]/10 border-[var(--ok)]/30' };
       case 'DENIED':
         return { label: 'Denied', icon: XCircle, color: 'text-[var(--critical)]', bg: 'bg-[var(--critical)]/10 border-[var(--critical)]/30' };
       default:
@@ -249,13 +402,10 @@ export default function CommanderInventory() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold font-['Space_Grotesk'] text-[var(--text-primary)] tracking-tight mb-2">Offline-First Inventory</h1>
-          <p className="text-sm text-[var(--text-secondary)] max-w-2xl leading-relaxed">
-            All changes are recorded locally via CRDT (Yjs). When offline, edits are queued to IndexedDB and automatically merged conflict-free on reconnect.
-          </p>
         </div>
         <div className="flex items-center gap-2 px-4 py-2 bg-[var(--ok)]/10 border border-[var(--ok)]/30 rounded-full text-[var(--ok)] shadow-[var(--shadow-glass)]">
           <Wifi size={16} />
-          <span className="text-sm font-bold tracking-wide">Cloud Synced</span>
+          <span className="text-sm font-bold tracking-wide">Local Stock</span>
         </div>
       </div>
 
@@ -314,6 +464,31 @@ export default function CommanderInventory() {
         </AnimatePresence>
       </div>
 
+      <section className="mb-8 border border-[var(--border)] bg-[var(--bg-panel)] p-4" aria-labelledby="stock-runway-heading">
+        <h2 id="stock-runway-heading" className="mb-3 text-sm font-bold text-[var(--text-primary)]">Stock Runway</h2>
+        {runwayError ? (
+          <p role="alert" className="text-xs text-[var(--critical)]">{runwayError}</p>
+        ) : runwayItems.length === 0 ? (
+          <p className="text-xs text-[var(--text-secondary)]">Waiting for stock snapshot.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+            {runwayItems.map(item => (
+              <div key={item.item_id} className="flex items-center justify-between gap-3 border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2">
+                <div className="min-w-0">
+                  <span className="block truncate text-xs font-semibold text-[var(--text-primary)]">{item.name}</span>
+                  <span className="text-[10px] text-[var(--text-secondary)]">{Number(item.current_stock).toLocaleString()} {item.unit}</span>
+                </div>
+                <span className={`shrink-0 text-right text-[10px] font-semibold ${item.status === 'reorder_now' ? 'text-[var(--critical)]' : 'text-[var(--accent-primary)]'}`}>
+                  {item.days_until_stockout !== null
+                    ? `Run out ~${Math.ceil(item.days_until_stockout)}d`
+                    : item.status === 'reorder_now' ? 'Reorder now' : 'Collecting history'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* ──────────────────────────────────────────────────────────
           BOTTOM SECTION: REQUEST ASSET BUTTON + LIFECYCLE LOG
           ────────────────────────────────────────────────────────── */}
@@ -327,9 +502,6 @@ export default function CommanderInventory() {
         >
           <div className="text-center max-w-md">
             <h3 className="text-xl font-bold text-[var(--text-primary)] font-['Space_Grotesk'] mb-3">Official Station Requisition</h3>
-            <p className="text-sm text-[var(--text-secondary)] mb-8">
-              Initiate a formal uplink request for critical assets not currently available in local stockpiles. Request will be queued for the next available satellite pass.
-            </p>
             <button 
               onClick={() => setIsModalOpen(true)}
               className="w-full md:w-auto px-10 py-4 bg-gradient-to-b from-blue-500 to-blue-600 text-white hover:from-blue-400 hover:to-blue-500 border border-blue-400/30 rounded-xl text-base font-bold transition-all shadow-[var(--shadow-glass)] hover:scale-105 active:scale-95 flex items-center justify-center gap-3 mx-auto"
@@ -349,6 +521,7 @@ export default function CommanderInventory() {
           <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-4 flex items-center gap-2">
             <Clock size={16} /> Request Lifecycle Status
           </h3>
+          {requisitionError && <p role="alert" className="mb-3 text-xs text-[var(--critical)]">{requisitionError}</p>}
           
           <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
             <AnimatePresence>

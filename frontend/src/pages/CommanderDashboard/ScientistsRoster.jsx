@@ -56,7 +56,7 @@ function PersonnelCard({ person, onEdit }) {
  const isElevated = person.status === 'elevated';
 
  return (
-  <div className="bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] p-5 rounded-xl flex flex-col gap-4 relative group transition-all duration-300 hover:shadow-lg hover:border-[var(--accent-primary)] hover:border-opacity-50">
+  <div className="bg-[var(--bg-panel-raised)] shadow-[var(--shadow-glass)] border border-[var(--border)] p-5 rounded-xl flex flex-col gap-4 relative group transition-all duration-300 hover:shadow-lg hover:border-[var(--accent-primary)] hover:border-opacity-50">
    
    {/* Edit Button - Appears on hover */}
    <button 
@@ -69,14 +69,14 @@ function PersonnelCard({ person, onEdit }) {
 
    {/* Header */}
    <div className="flex items-start gap-4">
-    <div className="relative w-16 h-16 shrink-0 rounded-full bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border-2 border-[var(--border)] flex items-center justify-center overflow-hidden">
+    <div className="relative w-16 h-16 shrink-0 rounded-full bg-[var(--bg-panel)] shadow-[var(--shadow-glass)] border-2 border-[var(--border)] flex items-center justify-center overflow-hidden">
      {person.imageUrl ? (
       <img src={person.imageUrl} alt={person.name} className="w-full h-full object-cover" />
      ) : (
       <User size={24} className="text-[var(--text-secondary)]" />
      )}
      {isElevated && (
-      <div className="absolute inset-0 border-2 border-[var(--critical)] rounded-full animate-pulse pointer-events-none" />
+      <div className="absolute inset-0 border-2 border-[var(--critical)] rounded-full pointer-events-none" />
      )}
     </div>
     <div className="flex-1 min-w-0 pr-8">
@@ -97,21 +97,21 @@ function PersonnelCard({ person, onEdit }) {
 
    {/* Vitals */}
    <div className="grid grid-cols-3 gap-3 mt-2">
-    <div className="text-center bg-[var(--bg-panel)] backdrop-blur-xl rounded-lg px-2 py-2 border border-[var(--border)] relative overflow-hidden group/vital">
+    <div className="text-center bg-[var(--bg-panel)] rounded-lg px-2 py-2 border border-[var(--border)] relative overflow-hidden group/vital">
      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--bg-panel-raised)] opacity-0 group-hover/vital:opacity-100 transition-opacity" />
      <p className="text-[var(--text-secondary)] text-[10px] uppercase tracking-wider mb-1 relative z-10">Heart</p>
-     <p className={`font-bold text-lg relative z-10 ${isElevated ? 'text-[var(--critical)] animate-pulse' : 'text-[var(--ok)]'}`}>
+     <p className={`font-bold text-lg relative z-10 ${isElevated ? 'text-[var(--critical)]' : 'text-[var(--ok)]'}`}>
       {person.heartRate} <span className="text-xs font-normal opacity-70">bpm</span>
      </p>
     </div>
-    <div className="text-center bg-[var(--bg-panel)] backdrop-blur-xl rounded-lg px-2 py-2 border border-[var(--border)] relative overflow-hidden group/vital">
+    <div className="text-center bg-[var(--bg-panel)] rounded-lg px-2 py-2 border border-[var(--border)] relative overflow-hidden group/vital">
      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--bg-panel-raised)] opacity-0 group-hover/vital:opacity-100 transition-opacity" />
      <p className="text-[var(--text-secondary)] text-[10px] uppercase tracking-wider mb-1 relative z-10">Temp</p>
      <p className={`font-bold text-lg relative z-10 ${person.temp > 37.5 ? 'text-[var(--critical)]' : 'text-[var(--text-primary)]'}`}>
       {person.temp}°C
      </p>
     </div>
-    <div className="text-center bg-[var(--bg-panel)] backdrop-blur-xl rounded-lg px-2 py-2 border border-[var(--border)] relative overflow-hidden group/vital">
+    <div className="text-center bg-[var(--bg-panel)] rounded-lg px-2 py-2 border border-[var(--border)] relative overflow-hidden group/vital">
      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--bg-panel-raised)] opacity-0 group-hover/vital:opacity-100 transition-opacity" />
      <p className="text-[var(--text-secondary)] text-[10px] uppercase tracking-wider mb-1 relative z-10">SpO₂</p>
      <p className={`font-bold text-lg relative z-10 ${person.o2 < 95 ? 'text-[var(--critical)]' : 'text-[var(--text-primary)]'}`}>
@@ -126,7 +126,7 @@ function PersonnelCard({ person, onEdit }) {
      ? 'bg-[var(--critical)]/10 text-[var(--critical)] border border-[var(--critical)]/20'
      : 'bg-[var(--ok)]/10 text-[var(--ok)] border border-[var(--ok)]/20'
    }`}>
-    <ShieldCheck size={14} className={isElevated ? 'animate-pulse' : ''} />
+    <ShieldCheck size={14} />
     {isElevated ? 'Vitals Elevated — Intervention Required' : 'All Vitals Optimal'}
    </div>
   </div>
@@ -265,7 +265,6 @@ function ScientistFormModal({ isOpen, onClose, onSave, onDelete, initialData }) 
        </div>
        <div className="flex-1">
         <label className="block text-xs text-[var(--text-secondary)] mb-1 uppercase tracking-wider">Profile Picture</label>
-        <p className="text-xs text-[var(--text-secondary)] mb-2">Click the circle to upload a photo from your device.</p>
         {formData.imageUrl && (
          <div className="mt-2 flex flex-row items-center gap-4">
           <button 
@@ -473,7 +472,6 @@ export default function ScientistsRoster() {
     <div className="flex-1 flex flex-col items-center justify-center text-[var(--text-secondary)] opacity-50 relative z-10 border-2 border-dashed border-[var(--border)] rounded-2xl m-4 bg-[var(--bg-panel-raised)]/30">
      <User size={64} className="mb-4 opacity-50" />
      <p className="text-lg">No personnel registered</p>
-     <p className="text-sm mt-2">Click 'Add Personnel' to begin roster</p>
     </div>
    ) : (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 flex-1 relative z-10 overflow-y-auto pr-2 pb-4">

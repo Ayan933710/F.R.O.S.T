@@ -6,11 +6,37 @@ export default function Login() {
  const navigate = useNavigate();
  const [role, setRole] = useState('admin');
  const [station, setStation] = useState('maitri');
- const [operatorId, setOperatorId] = useState('CMD-001');
- const [passcode, setPasscode] = useState('••••••••');
+ const [operatorId, setOperatorId] = useState('');
+ const [passcode, setPasscode] = useState('');
+ const [error, setError] = useState('');
 
  const handleSubmit = (e) => {
   e.preventDefault();
+  setError('');
+
+  const opId = operatorId.trim().toLowerCase();
+  const pass = passcode.trim();
+
+  let isValid = false;
+  if (role === 'admin') {
+   if (opId === 'admin' && pass === 'admin123') {
+    isValid = true;
+   }
+  } else if (role === 'commander') {
+   if (station === 'maitri' && opId === 'commander1' && pass === 'pass123') {
+    isValid = true;
+   } else if (station === 'bharati' && opId === 'commander2' && pass === 'pass123') {
+    isValid = true;
+   } else if (station === 'himadri' && opId === 'commander3' && pass === 'pass123') {
+    isValid = true;
+   }
+  }
+
+  if (!isValid) {
+   setError('Invalid credentials entered.');
+   return;
+  }
+
   if (role === 'commander') {
    localStorage.setItem('activeStation', station);
   }
@@ -18,7 +44,7 @@ export default function Login() {
  };
 
  return (
-  <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-6 relative">
+  <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center p-6 relative">
    {/* Return to Landing Button */}
    <button
     onClick={() => navigate('/')}
@@ -30,7 +56,7 @@ export default function Login() {
 
    <div className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] rounded-xl p-8 w-full max-w-md shadow-2xl">
     <h2 className="font-['Space_Grotesk'] font-bold text-[var(--accent-primary)] text-2xl mb-6 text-center tracking-wide">
-     ICE-NET SYSTEM ACCESS
+     F.R.O.S.T SYSTEM ACCESS
     </h2>
 
     {/* Role Selection */}
@@ -125,6 +151,12 @@ export default function Login() {
       </div>
      </div>
 
+     {error && (
+      <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-semibold rounded text-center">
+       {error}
+      </div>
+     )}
+
      <button
       type="submit"
       className="w-full py-3 bg-gradient-to-b from-blue-500 to-blue-600 text-white font-semibold shadow-[0_0_20px_rgba(59,130,246,0.3),inset_0_1px_0_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5),inset_0_1px_0_rgba(255,255,255,0.4)] hover:from-blue-400 hover:to-blue-500 transition-all duration-300 border border-blue-400/30 font-['Space_Grotesk'] text-base tracking-wider rounded hover:opacity-90 transition-opacity font-bold flex items-center justify-center gap-2 cursor-pointer uppercase"
@@ -133,10 +165,30 @@ export default function Login() {
      </button>
     </form>
 
-    <p className="text-[var(--text-secondary)] text-xs text-center mt-6">
-     Encrypted Polar Relay Protocol · National Centre for Polar & Ocean Research
-    </p>
+    <div className="mt-8 border-t border-[var(--border)] pt-6 w-full text-xs">
+     <h3 className="text-[var(--text-primary)] font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+       <Lock size={14} className="text-[var(--accent-primary)]" />
+       Test Credentials
+     </h3>
+     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[var(--text-secondary)]">
+       <div>
+         <p className="font-semibold text-[var(--text-primary)] mb-1 uppercase tracking-widest text-[10px]">Admin Access</p>
+         <p>ID: <span className="font-mono text-[var(--accent-primary)]">admin</span></p>
+         <p>Pass: <span className="font-mono">admin123</span></p>
+       </div>
+       <div className="space-y-2">
+         <p className="font-semibold text-[var(--text-primary)] uppercase tracking-widest text-[10px]">Commander Access</p>
+         <div>
+           <p>Maitri: <span className="font-mono text-[var(--accent-primary)]">commander1</span> / <span className="font-mono">pass123</span></p>
+           <p>Bharati: <span className="font-mono text-[var(--accent-primary)]">commander2</span> / <span className="font-mono">pass123</span></p>
+           <p>Himadri: <span className="font-mono text-[var(--accent-primary)]">commander3</span> / <span className="font-mono">pass123</span></p>
+         </div>
+       </div>
+     </div>
+    </div>
    </div>
+
+
   </div>
  );
 }

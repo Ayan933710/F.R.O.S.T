@@ -1,0 +1,155 @@
+[
+  {
+    "expedition_id": "ISEA-46",
+    "name": "46th Indian Scientific Expedition to Antarctica",
+    "season": "2026-27",
+    "start_date": "2026-11-01T00:00:00.000Z",
+    "end_date": "2027-04-15T00:00:00.000Z",
+    "status": "Planning",
+    "milestones": [
+      {
+        "id": "m1",
+        "name": "Procurement Complete",
+        "date": "2026-09-30",
+        "status": "done",
+        "progress": 100
+      },
+      {
+        "id": "m2",
+        "name": "Cargo Packed (Goa)",
+        "date": "2026-10-15",
+        "status": "in-progress",
+        "progress": 65
+      },
+      {
+        "id": "m3",
+        "name": "Cape Town Staging",
+        "date": "2026-11-05",
+        "status": "pending",
+        "progress": 0
+      },
+      {
+        "id": "m4",
+        "name": "DROMLAN Flight Departure",
+        "date": "2026-11-20",
+        "status": "pending",
+        "progress": 0
+      },
+      {
+        "id": "m5",
+        "name": "Ice Shelf Delivery",
+        "date": "2026-12-01",
+        "status": "pending",
+        "progress": 0
+      },
+      {
+        "id": "m6",
+        "name": "Summer Team Operational",
+        "date": "2026-12-15",
+        "status": "pending",
+        "progress": 0
+      },
+      {
+        "id": "m7",
+        "name": "Winter-Over Handoff",
+        "date": "2027-03-01",
+        "status": "pending",
+        "progress": 0
+      }
+    ],
+    "budget": [
+      {
+        "id": "b1",
+        "category": "Chartered Flights (DROMLAN)",
+        "amount": 4500000,
+        "spent": 2250000,
+        "currency": "INR"
+      },
+      {
+        "id": "b2",
+        "category": "Ice-class Vessel Charter",
+        "amount": 12000000,
+        "spent": 6000000,
+        "currency": "INR"
+      },
+      {
+        "id": "b3",
+        "category": "Scientific Equipment",
+        "amount": 8550000,
+        "spent": 3420000,
+        "currency": "INR"
+      },
+      {
+        "id": "b4",
+        "category": "Provisions & Consumables",
+        "amount": 3200000,
+        "spent": 1920000,
+        "currency": "INR"
+      },
+      {
+        "id": "b5",
+        "category": "Personnel Deployment",
+        "amount": 2800000,
+        "spent": 840000,
+        "currency": "INR"
+      }
+    ],
+    "charter_schedule": [
+      {
+        "id": "CHF-301",
+        "route": "Cape Town → Maitri",
+        "date": "2026-10-05",
+        "duration": 8,
+        "offset": 0,
+        "status": "Confirmed",
+        "window": "Oct 1 - Oct 8"
+      },
+      {
+        "id": "CHF-302",
+        "route": "Christchurch → Bharati",
+        "date": "2026-10-12",
+        "duration": 12,
+        "offset": 3,
+        "status": "Pending",
+        "window": "Oct 4 - Oct 16"
+      },
+      {
+        "id": "CHF-303",
+        "route": "Tromsø → Himadri",
+        "date": "2026-10-18",
+        "duration": 5,
+        "offset": 6,
+        "status": "Confirmed",
+        "window": "Oct 7 - Oct 12"
+      }
+    ],
+    "budget_allocation": [
+      {
+        "name": "Charter Flights",
+        "value": 5.5,
+        "color": "#3B82F6"
+      },
+      {
+        "name": "Cold Logistics",
+        "value": 2.8,
+        "color": "#F43F5E"
+      },
+      {
+        "name": "Asset Demand Reserve",
+        "value": 3.5,
+        "color": "#eab308"
+      },
+      {
+        "name": "Reserve",
+        "value": 2,
+        "color": "#4ade80"
+      },
+      {
+        "name": "New Field",
+        "value": 0,
+        "color": "#b38547"
+      }
+    ],
+    "updated_at": "2026-09-29T09:10:19.945Z"
+  }
+]

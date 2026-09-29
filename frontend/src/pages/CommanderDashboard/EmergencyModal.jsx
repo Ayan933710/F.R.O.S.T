@@ -29,7 +29,7 @@ export default function EmergencyModal({ isOpen, onClose, onDispatch }) {
         <div className="p-6 flex flex-col gap-5 text-sm">
           <div className="bg-red-500/10 border border-red-500/30 p-4 rounded text-red-200 leading-relaxed">
             <p className="font-semibold mb-1 text-red-400">WARNING: CRITICAL ACTION</p>
-            You are about to trigger a network-wide emergency alert. This will immediately notify Commander 2, Commander 3, and the Global Admin Dashboard. False alarms are heavily logged.
+            This will notify the command team and admin. False alarms are logged.
           </div>
 
           <div className="flex flex-col gap-2">

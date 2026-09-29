@@ -57,7 +57,7 @@ export default function Landing() {
     {/* Logo */}
     <div className="font-black text-xl tracking-widest text-[var(--text-primary)] font-['Bebas_Neue'] flex items-center gap-2">
      <ShieldCheck size={22} className="text-[var(--accent-primary)]" />
-     ICE-NET
+     F.R.O.S.T
     </div>
 
     {/* Center Links */}
@@ -383,10 +383,9 @@ export default function Landing() {
     >
      Four phases from manifest to merge. Each step is designed to function independently even without connectivity.
     </motion.p>
-
-    <div className="flex flex-col md:flex-row justify-between items-start gap-10 relative mt-10">
+    <div className="grid grid-cols-1 md:grid-cols-4 items-start gap-10 relative mt-10">
      {/* Animated connecting line (desktop) */}
-     <div className="hidden md:block absolute top-6 left-[10%] right-[10%] h-0.5 z-0 overflow-hidden">
+     <div className="hidden md:block absolute top-6 left-[12.5%] right-[12.5%] h-0.5 z-0 overflow-hidden">
       <div
        className="w-full h-full"
        style={{
@@ -405,7 +404,7 @@ export default function Landing() {
       whileInView="visible"
       variants={fadeUp}
       viewport={{ once: true }}
-      className="flex flex-col items-start md:items-center text-left md:text-center w-full md:w-64 gap-4 z-10"
+      className="flex flex-col items-start md:items-center text-left md:text-center w-full gap-4 z-10"
      >
       <motion.div
        whileHover={{ scale: 1.2, backgroundColor: 'var(--accent-primary)', color: '#fff' }}
@@ -426,7 +425,7 @@ export default function Landing() {
       whileInView="visible"
       variants={fadeUp}
       viewport={{ once: true }}
-      className="flex flex-col items-start md:items-center text-left md:text-center w-full md:w-64 gap-4 z-10"
+      className="flex flex-col items-start md:items-center text-left md:text-center w-full gap-4 z-10"
      >
       <motion.div
        whileHover={{ scale: 1.2, backgroundColor: 'var(--accent-primary)', color: '#fff' }}
@@ -447,7 +446,7 @@ export default function Landing() {
       whileInView="visible"
       variants={fadeUp}
       viewport={{ once: true }}
-      className="flex flex-col items-start md:items-center text-left md:text-center w-full md:w-64 gap-4 z-10"
+      className="flex flex-col items-start md:items-center text-left md:text-center w-full gap-4 z-10"
      >
       <motion.div
        whileHover={{ scale: 1.2, backgroundColor: 'var(--accent-primary)', color: '#fff' }}
@@ -468,7 +467,7 @@ export default function Landing() {
       whileInView="visible"
       variants={fadeUp}
       viewport={{ once: true }}
-      className="flex flex-col items-start md:items-center text-left md:text-center w-full md:w-64 gap-4 z-10"
+      className="flex flex-col items-start md:items-center text-left md:text-center w-full gap-4 z-10"
      >
       <motion.div
        whileHover={{ scale: 1.2, backgroundColor: 'var(--accent-primary)', color: '#fff', borderColor: 'var(--accent-primary)' }}
@@ -496,7 +495,7 @@ export default function Landing() {
      <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2 font-['Bebas_Neue'] text-2xl text-[var(--text-primary)] tracking-widest">
        <Compass size={24} className="text-[var(--accent-primary)]" />
-       HEEM_SANCHAR
+       F.R.O.S.T
       </div>
       <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
        Advanced logistics and asset tracking system engineered for extreme polar environments.
@@ -541,7 +540,7 @@ export default function Landing() {
      {/* Bottom gradient divider */}
      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-900/40 to-transparent"></div>
      <div>
-      &copy; {new Date().getFullYear()} HEEM_SANCHAR / SIH 2026. All rights reserved.
+      &copy; {new Date().getFullYear()} F.R.O.S.T / SIH 2026. All rights reserved.
      </div>
      <div className="flex items-center gap-3">
       <div className="w-2 h-2 rounded-full bg-[var(--ok)] animate-pulse shadow-[0_0_8px_var(--ok)]"></div>

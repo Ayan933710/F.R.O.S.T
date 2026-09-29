@@ -68,9 +68,6 @@ export default function LiveTelemetryRadar() {
      <h2 className="text-[var(--accent-primary)] font-['Space_Grotesk'] font-bold text-2xl tracking-wide">
       LIVE TELEMETRY RADAR
      </h2>
-     <p className="text-[var(--text-secondary)] text-xs font-['Work_Sans']">
-      Sub-second Sensor Ingestion · Microgrid Voltage & Thermal Core Monitor
-     </p>
     </div>
 
     {/* Live Stream Active Badge */}

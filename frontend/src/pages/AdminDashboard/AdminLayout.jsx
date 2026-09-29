@@ -36,7 +36,7 @@ function SidebarLink({ to, label, icon: Icon, end }) {
 
 export default function AdminLayout() {
  return (
-  <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col w-full overflow-x-hidden">
+  <div className="dashboard-shell min-h-screen bg-[var(--bg-primary)] flex flex-col w-full overflow-x-hidden">
    <NavigationBar />
 
    <div className="flex flex-1 h-[calc(100vh-73px)] w-full overflow-x-hidden">
@@ -52,7 +52,6 @@ export default function AdminLayout() {
 
     {/* Dynamic Main Content */}
     <main className="flex-1 p-6 overflow-y-auto bg-[var(--bg-primary)] min-w-0">
-     <div className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] rounded-xl p-6 min-h-full min-w-0">
       <Routes>
        <Route index element={<ResearchCenters />} />
        <Route path="expedition" element={<ExpeditionPlanner />} />
@@ -60,7 +59,6 @@ export default function AdminLayout() {
        <Route path="inventory" element={<InventoryRequests />} />
        <Route path="history" element={<AdminHistory />} />
       </Routes>
-     </div>
     </main>
    </div>
   </div>

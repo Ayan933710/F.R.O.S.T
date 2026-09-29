@@ -11,7 +11,7 @@ export default function NavigationBar() {
   <nav className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border-b border-[var(--border)] p-4 flex items-center justify-between shrink-0">
    <div className="flex items-center gap-2">
     <span className="text-[var(--accent-primary)] text-2xl font-bold font-['Space_Grotesk'] tracking-wider">
-     ICE-NET
+     F.R.O.S.T
     </span>
     <span className="text-[var(--text-secondary)] text-sm hidden sm:inline">
      | Polar Logistics Command

@@ -29,16 +29,35 @@ export default function ArrivalCargoScanner() {
  const [verifyResult, setVerifyResult] = useState(null); // null | 'match' | 'mismatch'
  const [shakeKey, setShakeKey] = useState(0);
 
- const executeVerify = (inputToTest) => {
+ const executeVerify = async (inputToTest) => {
   const value = (inputToTest !== undefined ? inputToTest : payloadInput).trim();
   if (!value) return;
 
-  // Strict comparison against sealedManifestHash
-  if (sealedManifestHash && value === sealedManifestHash) {
-   setVerifyResult('match');
-  } else {
-   setVerifyResult('mismatch');
-   setShakeKey((prev) => prev + 1);
+  try {
+    const latestRes = await fetch('http://localhost:5000/api/v1/cargo/manifests/latest');
+    if (!latestRes.ok) throw new Error('No sealed manifest found');
+    const latestManifest = await latestRes.json();
+
+    const verifyRes = await fetch('http://localhost:5000/api/v1/cargo/verify-hash', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ manifest_id: latestManifest.manifest_id, scanned_hash: value })
+    });
+    
+    const verifyData = await verifyRes.json();
+    if (verifyRes.ok && verifyData.matches) {
+      setVerifyResult('match');
+    } else {
+      setVerifyResult('mismatch');
+      setShakeKey((prev) => prev + 1);
+    }
+  } catch (error) {
+    if (sealedManifestHash && value === sealedManifestHash) {
+     setVerifyResult('match');
+    } else {
+     setVerifyResult('mismatch');
+     setShakeKey((prev) => prev + 1);
+    }
   }
  };
 
@@ -67,33 +86,23 @@ export default function ArrivalCargoScanner() {
    <div className="flex items-center justify-between mb-6">
     <div>
      <h2 className="text-[var(--accent-primary)] font-['Space_Grotesk'] font-bold text-2xl tracking-wide">
-      OFFLINE ARRIVAL CARGO SCANNER
+        CARGO ARRIVAL CHECK
      </h2>
-     <p className="text-[var(--text-secondary)] text-xs font-['Work_Sans']">
-      Edge Air-Gapped Verification · Laser Barcode Telemetry · Cryptographic Hash Audit
-     </p>
-    </div>
-
-    <div className="flex items-center gap-3">
-     <span className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] px-3 py-1.5 rounded bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)]">
-      <Zap size={14} className="text-[var(--accent-primary)]" />
-      Scanner HW Link: <span className="text-[var(--ok)] font-semibold">Ready (USB-HID)</span>
-     </span>
     </div>
    </div>
 
-   {/* Cloud Synced Hash Banner */}
+    {/* Reference Hash */}
    <div className="bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] rounded-xl p-4 mb-6">
     <div className="flex items-center justify-between mb-2">
      <div className="flex items-center gap-2">
       <Hash size={16} className="text-[var(--accent-primary)]" />
       <span className="text-[var(--text-secondary)] text-xs uppercase tracking-widest font-semibold">
-       Expected Manifest Hash (Synced from Cloud CRDT)
+    Expected Manifest Hash
       </span>
      </div>
      {sealedManifestHash ? (
       <span className="text-[10px] text-[var(--ok)] bg-[var(--ok)]/10 border border-[var(--ok)] px-2 py-0.5 rounded font-mono font-bold">
-       SYNCED & VALIDATED
+    HASH AVAILABLE
       </span>
      ) : (
       <span className="text-[10px] text-[var(--accent-primary)] bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)] px-2 py-0.5 rounded font-mono font-bold">
@@ -103,7 +112,7 @@ export default function ArrivalCargoScanner() {
     </div>
 
     <p className="text-[var(--text-primary)] font-mono text-xs break-all leading-relaxed bg-[var(--bg-primary)] p-2.5 rounded border border-[var(--border)] select-all">
-     {sealedManifestHash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 (Default Mock — Seal manifest in Admin to update)'}
+    {sealedManifestHash || 'No manifest hash loaded'}
     </p>
    </div>
 
@@ -152,10 +161,10 @@ export default function ArrivalCargoScanner() {
      <p className="text-[10px] font-mono text-[var(--text-secondary)] mt-3">
       {isScanning ? (
        <span className="text-[var(--accent-primary)] animate-pulse font-semibold">
-        LASER ACTIVE — DECODING QR / CODE128...
+        SCANNING...
        </span>
       ) : (
-       'Standby for optical pass'
+    'Standby'
       )}
      </p>
     </div>
@@ -164,14 +173,14 @@ export default function ArrivalCargoScanner() {
     <div className="lg:col-span-8 bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] rounded-xl p-5 flex flex-col justify-between">
      <div>
       <label className="block text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-wider mb-2">
-       Hardware Scanner Dropped Payload / Manual Hash Input
+    Scanned Payload
       </label>
       <div className="flex gap-2 mb-3">
        <div className="relative flex-1">
         <Scan size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
         <input
          type="text"
-         placeholder="Paste scanned payload SHA-256 hash or trigger laser scan..."
+         placeholder="Enter scanned payload"
          value={payloadInput}
          onChange={(e) => setPayloadInput(e.target.value)}
          onKeyDown={(e) => e.key === 'Enter' && executeVerify()}
@@ -202,7 +211,7 @@ export default function ArrivalCargoScanner() {
        className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--accent-primary)] text-[var(--accent-primary)] rounded text-xs font-semibold hover:bg-[var(--accent-primary)] hover:text-white transition-colors cursor-pointer disabled:opacity-40"
       >
        <Barcode size={13} />
-       Scan Cargo Seal
+    Run Test Scan
       </button>
       {verifyResult && (
        <button
@@ -231,10 +240,7 @@ export default function ArrivalCargoScanner() {
       >
        <Package size={48} className="mx-auto mb-3 text-[var(--text-secondary)] opacity-30" />
        <p className="text-[var(--text-primary)] font-semibold text-sm">
-        Ready for Optical Container Verification
-       </p>
-       <p className="text-[var(--text-secondary)] text-xs mt-1">
-        Scan container QR or load simulated hardware payload to audit cryptographic checksum.
+        Awaiting cargo scan
        </p>
       </motion.div>
      )}
@@ -255,30 +261,11 @@ export default function ArrivalCargoScanner() {
         </div>
         <div>
          <h3 className="text-[var(--ok)] font-['Space_Grotesk'] font-bold text-xl tracking-wide">
-          HASH MATCH CONFIRMED · ZERO TAMPERING
+          HASH MATCH
          </h3>
          <p className="text-[var(--text-secondary)] text-xs mt-0.5">
-          Local container payload hash matches HQ sealed cryptographic manifest. Manifest verified authentic.
+          Scanned payload matches the loaded reference hash.
          </p>
-        </div>
-       </div>
-
-       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] p-4 rounded-lg border border-[var(--border)] mb-4 text-xs font-mono">
-        <div>
-         <span className="text-[var(--text-secondary)] text-[10px] uppercase block">Container ID</span>
-         <strong className="text-[var(--text-primary)]">ICE-PALLET-09</strong>
-        </div>
-        <div>
-         <span className="text-[var(--text-secondary)] text-[10px] uppercase block">Manifest Status</span>
-         <strong className="text-[var(--ok)]">Air-Gapped Valid</strong>
-        </div>
-        <div>
-         <span className="text-[var(--text-secondary)] text-[10px] uppercase block">Items Verified</span>
-         <strong className="text-[var(--text-primary)]">650 / 650 Units</strong>
-        </div>
-        <div>
-         <span className="text-[var(--text-secondary)] text-[10px] uppercase block">Intake Bay</span>
-         <strong className="text-[var(--accent-primary)]">Bay 2-Alpha (Maitri)</strong>
         </div>
        </div>
       </motion.div>
@@ -299,14 +286,14 @@ export default function ArrivalCargoScanner() {
         <div>
          <div className="flex items-center gap-2">
           <h3 className="text-[var(--critical)] font-['Space_Grotesk'] font-bold text-xl tracking-wide">
-           TAMPER ALERT: CRYPTOGRAPHIC MISMATCH
+           HASH MISMATCH
           </h3>
           <span className="text-[10px] font-mono text-[var(--text-primary)] bg-[var(--critical)] px-2 py-0.5 rounded font-bold uppercase animate-pulse">
-           Critical Security Lock
+           REVIEW REQUIRED
           </span>
          </div>
          <p className="text-[var(--text-secondary)] text-xs mt-1">
-          Scanned cargo hash differs from HQ sealed manifest. Cargo integrity cannot be guaranteed. Quarantine container immediately.
+          Scanned payload differs from the loaded reference. Do not accept the shipment until it is checked.
          </p>
         </div>
        </div>
@@ -315,10 +302,10 @@ export default function ArrivalCargoScanner() {
        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5 text-xs font-mono">
         <div className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] p-3 rounded-lg border border-[var(--border)]">
          <span className="text-[var(--text-secondary)] text-[10px] uppercase block mb-1">
-          Expected Hash (HQ Sealed):
+          Expected Hash:
          </span>
          <p className="text-[var(--ok)] break-all text-[11px]">
-          {sealedManifestHash || 'None Sealed in Admin (Awaiting Seal)'}
+          {sealedManifestHash || 'No reference hash loaded'}
          </p>
         </div>
         <div className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] p-3 rounded-lg border border-[var(--critical)]/50">

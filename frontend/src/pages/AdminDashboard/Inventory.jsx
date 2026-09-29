@@ -1,99 +1,120 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Database, WifiOff, AlertTriangle, CheckCircle, Clock, Search, X, Satellite, MapPin } from 'lucide-react';
 
 export default function AdminInventory() {
   const [activeCenter, setActiveCenter] = useState('Himadri');
+  const [inventoryData, setInventoryData] = useState({ Himadri: [], Bharati: [], Maitri: [] });
+  const [reqQueue, setReqQueue] = useState({ Himadri: [], Bharati: [], Maitri: [] });
+  const [outboundQueue, setOutboundQueue] = useState({ Himadri: [], Bharati: [], Maitri: [] });
+  const [inventoryLoading, setInventoryLoading] = useState(false);
+  const [inventoryError, setInventoryError] = useState('');
+  const [requestError, setRequestError] = useState('');
 
-  const [inventoryData] = useState({
-    Himadri: [
-      { id: 1, name: 'Aviation Fuel (ATF)', qty: 12500, currentQty: 12000, reqQty: 500, reqTime: '2026-09-28T19:10:00Z', unit: 'L' },
-      { id: 2, name: 'Thermal Rations', qty: 4200, currentQty: 4000, reqQty: 200, reqTime: '2026-09-28T16:00:00Z', unit: 'Packs' },
-      { id: 3, name: 'Medical Kits (Trauma)', qty: 150, currentQty: 150, reqQty: 0, reqTime: null, unit: 'Units' },
-      { id: 4, name: 'IoT Base Stations', qty: 8, currentQty: 5, reqQty: 3, reqTime: '2026-09-27T10:00:00Z', unit: 'Nodes' },
-    ],
-    Bharati: [
-      { id: 5, name: 'Diesel (Marine Grade)', qty: 25000, currentQty: 24000, reqQty: 1000, reqTime: '2026-09-28T18:00:00Z', unit: 'L' },
-      { id: 6, name: 'Deep Freeze Suits', qty: 45, currentQty: 45, reqQty: 0, reqTime: null, unit: 'Sets' },
-      { id: 7, name: 'Emergency Beacons', qty: 12, currentQty: 10, reqQty: 2, reqTime: '2026-09-28T09:00:00Z', unit: 'Units' },
-    ],
-    Maitri: [
-      { id: 8, name: 'Generator Bearings', qty: 4, currentQty: 2, reqQty: 2, reqTime: '2026-09-28T20:15:00Z', unit: 'Crates' },
-      { id: 9, name: 'Antibiotics Box', qty: 200, currentQty: 200, reqQty: 0, reqTime: null, unit: 'Packs' },
-      { id: 10, name: 'Satellite Dish Spares', qty: 2, currentQty: 1, reqQty: 1, reqTime: '2026-09-26T12:00:00Z', unit: 'Units' },
-    ]
-  });
+  useEffect(() => {
+    let active = true;
+    const loadStationData = async () => {
+      setInventoryLoading(true);
+      try {
+        const [forecastResponse, requisitionResponse] = await Promise.all([
+          fetch(`http://localhost:5000/api/v1/inventory/forecast?station=${activeCenter.toLowerCase()}`),
+          fetch(`http://localhost:5000/api/v1/requisitions?station=${activeCenter.toLowerCase()}`),
+        ]);
+        const [forecast, requisitions] = await Promise.all([forecastResponse.json(), requisitionResponse.json()]);
+        if (!forecastResponse.ok) throw new Error(forecast.error || 'Could not load station inventory');
+        if (!requisitionResponse.ok) throw new Error(requisitions.error || 'Could not load requisitions');
+        if (!active) return;
 
-  const [reqQueue, setReqQueue] = useState({
-    Himadri: [
-      { id: 201, item: 'Seismic Sensors', qty: 12, time: '2026-09-27T08:15:00Z', urgency: 'CRITICAL' },
-      { id: 202, item: 'Aviation Fuel (ATF)', qty: 500, time: '2026-09-27T08:20:00Z', urgency: 'ROUTINE' },
-    ],
-    Bharati: [
-      { id: 203, item: 'Oxygen Cylinders', qty: 25, time: '2026-09-27T09:10:00Z', urgency: 'CRITICAL' },
-    ],
-    Maitri: []
-  });
+        const stationRequests = requisitions.map(req => ({
+          id: req.requisition_id,
+          item: req.item,
+          qty: req.quantity,
+          unit: req.unit,
+          time: req.created_at,
+          urgency: req.urgency,
+          status: req.status,
+          decision: req.status === 'APPROVED' ? 'Approve' : 'Deny',
+          outId: req.requisition_id,
+        }));
+        const pendingRequests = stationRequests.filter(req => req.status === 'PENDING_APPROVAL');
+        const decidedRequests = stationRequests.filter(req => req.status === 'APPROVED' || req.status === 'DENIED');
+        const pendingByItem = new Map();
+        pendingRequests.forEach(req => pendingByItem.set(req.item, [...(pendingByItem.get(req.item) || []), req]));
 
-  const [outboundQueue, setOutboundQueue] = useState({
-    Himadri: [],
-    Bharati: [],
-    Maitri: []
-  });
+        setInventoryData(previous => ({
+          ...previous,
+          [activeCenter]: (forecast.items || []).map(item => {
+            const itemRequests = pendingByItem.get(item.name) || [];
+            return {
+              id: item.item_id,
+              name: item.name,
+              qty: item.current_stock,
+              currentQty: item.current_stock,
+              reqQty: itemRequests.reduce((total, req) => total + Number(req.qty), 0),
+              reqTime: itemRequests[0]?.time || null,
+              unit: item.unit,
+              threshold: item.critical_threshold,
+              daysToStockout: item.days_until_stockout,
+              status: item.status,
+            };
+          }),
+        }));
+        setReqQueue(previous => ({ ...previous, [activeCenter]: pendingRequests }));
+        setOutboundQueue(previous => ({ ...previous, [activeCenter]: decidedRequests }));
+        setInventoryError('');
+        setRequestError('');
+      } catch (error) {
+        if (active) setInventoryError(error.message || 'Could not load station data');
+      } finally {
+        if (active) setInventoryLoading(false);
+      }
+    };
 
-  const syncHealth = {
-    Himadri: { time: '72h ago', pending: 12, stale: true },
-    Bharati: { time: '2m ago', pending: 0, stale: false },
-    Maitri: { time: '45m ago', pending: 3, stale: false }
-  };
+    loadStationData();
+    const refreshTimer = setInterval(loadStationData, 15000);
+    return () => {
+      active = false;
+      clearInterval(refreshTimer);
+    };
+  }, [activeCenter]);
 
-  const handleApprove = (id) => {
-    const centerReqs = reqQueue[activeCenter];
-    const req = centerReqs.find(r => r.id === id);
-    if (!req) return;
-    
-    setReqQueue(prev => ({
-      ...prev,
-      [activeCenter]: prev[activeCenter].filter(r => r.id !== id)
-    }));
-    
-    const outId = Date.now();
-    setOutboundQueue(prev => ({
-      ...prev,
-      [activeCenter]: [{ ...req, status: 'Sent — awaiting ack', decision: 'Approve', outId }, ...prev[activeCenter]]
-    }));
-
-    setTimeout(() => {
-      setOutboundQueue(prev => ({
-        ...prev,
-        [activeCenter]: prev[activeCenter].map(o => o.outId === outId ? { ...o, status: 'Acknowledged by station' } : o)
+  const handleDecision = async (id, decision) => {
+    setRequestError('');
+    try {
+      const response = await fetch(`http://localhost:5000/api/v1/requisitions/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not update requisition');
+      const requisition = result.requisition;
+      const decided = {
+        id: requisition.requisition_id,
+        item: requisition.item,
+        qty: requisition.quantity,
+        unit: requisition.unit,
+        time: requisition.created_at,
+        urgency: requisition.urgency,
+        status: requisition.status,
+        decision: requisition.status === 'APPROVED' ? 'Approve' : 'Deny',
+        outId: requisition.requisition_id,
+      };
+      setReqQueue(previous => ({ ...previous, [activeCenter]: previous[activeCenter].filter(req => req.id !== id) }));
+      setOutboundQueue(previous => ({ ...previous, [activeCenter]: [decided, ...previous[activeCenter]] }));
+      setInventoryData(previous => ({
+        ...previous,
+        [activeCenter]: previous[activeCenter].map(item => item.name === requisition.item
+          ? { ...item, reqQty: Math.max(0, item.reqQty - Number(requisition.quantity)) }
+          : item),
       }));
-    }, 5000);
+    } catch (error) {
+      setRequestError(error.message || 'Could not update requisition');
+    }
   };
 
-  const handleDeny = (id) => {
-    const centerReqs = reqQueue[activeCenter];
-    const req = centerReqs.find(r => r.id === id);
-    if (!req) return;
-    
-    setReqQueue(prev => ({
-      ...prev,
-      [activeCenter]: prev[activeCenter].filter(r => r.id !== id)
-    }));
-    
-    const outId = Date.now();
-    setOutboundQueue(prev => ({
-      ...prev,
-      [activeCenter]: [{ ...req, status: 'Sent — awaiting ack', decision: 'Deny', outId }, ...prev[activeCenter]]
-    }));
-
-    setTimeout(() => {
-      setOutboundQueue(prev => ({
-        ...prev,
-        [activeCenter]: prev[activeCenter].map(o => o.outId === outId ? { ...o, status: 'Acknowledged by station' } : o)
-      }));
-    }, 5000);
-  };
+  const handleApprove = id => handleDecision(id, 'APPROVED');
+  const handleDeny = id => handleDecision(id, 'DENIED');
 
   const currentInventory = inventoryData[activeCenter];
   const currentReqs = reqQueue[activeCenter];
@@ -109,10 +130,7 @@ export default function AdminInventory() {
             <Database size={28} />
           </div>
           <div>
-            <h2 className="text-3xl font-bold font-['Space_Grotesk'] text-[var(--text-primary)] tracking-tight">The Cloud Hub</h2>
-            <p className="text-[var(--text-secondary)] text-sm flex items-center gap-2">
-              <Satellite size={14} className="text-[var(--accent-primary)]" /> Global Oversight & Decision Queuing
-            </p>
+            <h2 className="text-3xl font-bold font-['Space_Grotesk'] text-[var(--text-primary)] tracking-tight">Station Inventory</h2>
           </div>
         </div>
       </div>
@@ -120,7 +138,7 @@ export default function AdminInventory() {
       {/* Station Selector */}
       <div className="mb-8">
         <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-3 flex items-center gap-2">
-          <MapPin size={14} /> Select Edge Node (Station)
+          <MapPin size={14} /> Station
         </h3>
         <div className="flex flex-wrap gap-3">
           {['Himadri', 'Bharati', 'Maitri'].map(center => (
@@ -133,11 +151,11 @@ export default function AdminInventory() {
                   : 'bg-[var(--bg-panel)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-panel-raised)] hover:border-[var(--border-hover)]'
               }`}
             >
-              <span className={`w-2 h-2 rounded-full shrink-0 ${activeCenter === center ? 'bg-white animate-pulse' : (syncHealth[center].stale ? 'bg-amber-500' : 'bg-[var(--ok)]')}`}></span>
+              <span className={`w-2 h-2 rounded-full shrink-0 ${activeCenter === center ? 'bg-white animate-pulse' : 'bg-[var(--ok)]'}`}></span>
               <div className="flex flex-col items-start text-left">
                 <span>{center} Station</span>
-                <span className={`text-[9px] font-normal font-mono mt-0.5 ${activeCenter === center ? 'text-white/80' : (syncHealth[center].stale ? 'text-amber-500/80' : 'text-[var(--text-secondary)] opacity-80')}`}>
-                  Sync: {syncHealth[center].time} • {syncHealth[center].pending} pending
+                <span className={`text-[9px] font-normal font-mono mt-0.5 ${activeCenter === center ? 'text-white/80' : 'text-[var(--text-secondary)] opacity-80'}`}>
+                  {inventoryData[center].length} items · {reqQueue[center].length} pending
                 </span>
               </div>
             </button>
@@ -145,26 +163,14 @@ export default function AdminInventory() {
         </div>
       </div>
 
+      {inventoryError && <p role="alert" className="mb-4 text-xs text-[var(--critical)]">{inventoryError}</p>}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         {/* Module 1: Read-Only Inventory Mirror */}
         <div className="flex flex-col gap-6">
           
-          {/* Staleness Banner */}
-          <motion.div 
-            key={`banner-${activeCenter}`}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl shadow-[var(--shadow-glass)] flex items-start gap-3"
-          >
-            <AlertTriangle size={24} className="text-amber-500 shrink-0 mt-0.5" />
-            <div>
-              <h4 className="font-bold text-amber-500 text-sm uppercase tracking-wide">CAUTION: Base link severed</h4>
-              <p className="text-amber-500/80 text-xs mt-1 leading-relaxed">
-                <span className="font-bold">{activeCenter}'s</span> inventory mirror is <span className="font-black text-amber-400">72 HOURS STALE</span>. Verify carefully before approving requisitions. Passive CRDT updates are failing to sync from Edge Nodes.
-              </p>
-            </div>
-          </motion.div>
+
 
           <motion.div 
             key={`mirror-${activeCenter}`}
@@ -183,12 +189,16 @@ export default function AdminInventory() {
                   <tr className="border-b border-[var(--border)] text-xs uppercase tracking-wider text-[var(--text-secondary)]">
                     <th className="pb-3 font-semibold">Asset ID</th>
                     <th className="pb-3 font-semibold">Asset Name</th>
-                    <th className="pb-3 font-semibold text-right text-amber-500/70 pr-4">Stale Qty</th>
+                    <th className="pb-3 font-semibold text-right pr-4">Stock</th>
+                    <th className="pb-3 font-semibold text-right pr-4">AI Forecast</th>
                     <th className="pb-3 font-semibold text-right pr-4">Requested Qty</th>
                     <th className="pb-3 font-semibold text-right">Req. Time</th>
                   </tr>
                 </thead>
                 <tbody>
+                  {currentInventory.length === 0 && (
+                    <tr><td colSpan={5} className="py-8 text-center text-xs text-[var(--text-secondary)]">{inventoryLoading ? 'Loading station stock...' : 'No stock snapshots for this station yet.'}</td></tr>
+                  )}
                   {currentInventory.map(item => (
                     <tr key={item.id} className="border-b border-[var(--border)]/50 hover:bg-[var(--bg-panel-raised)] transition-colors">
                       <td className="py-3 text-xs font-mono text-[var(--text-secondary)] opacity-50">SYS-{item.id}</td>
@@ -198,6 +208,13 @@ export default function AdminInventory() {
                           <span className="text-right flex-1">{item.qty}</span>
                           <span className="text-[10px] text-amber-500/50 w-10 text-left">{item.unit}</span>
                         </div>
+                      </td>
+                      <td className="py-3 text-sm font-mono text-[var(--text-primary)]">
+                        <span className={`text-[10px] font-bold ${item.status === 'reorder_now' ? 'text-[var(--critical)]' : 'text-[var(--accent-primary)]'}`}>
+                          {item.daysToStockout != null
+                            ? `Run out ~${Math.ceil(item.daysToStockout)}d`
+                            : item.status === 'reorder_now' ? 'Reorder now' : 'Collecting history'}
+                        </span>
                       </td>
                       <td className="py-3 text-sm font-mono text-[var(--text-primary)]">
                         {item.reqQty > 0 ? (
@@ -225,11 +242,6 @@ export default function AdminInventory() {
                 </tbody>
               </table>
             </div>
-            
-            <div className="mt-4 p-3 bg-black/50 border border-[var(--border)] rounded flex items-center justify-center gap-2">
-              <WifiOff size={14} className="text-[var(--text-secondary)] opacity-50" />
-              <span className="text-xs font-mono text-[var(--text-secondary)] opacity-50 uppercase tracking-widest">Read Only Mode Enforced ({activeCenter})</span>
-            </div>
           </motion.div>
         </div>
 
@@ -237,6 +249,7 @@ export default function AdminInventory() {
         <div className="flex flex-col gap-6">
           
           {/* Module 2: Requisition Queue */}
+          {requestError && <p role="alert" className="text-xs text-[var(--critical)]">{requestError}</p>}
           <motion.div 
             key={`reqs-${activeCenter}`}
             initial={{ opacity: 0, x: 20 }}
@@ -302,12 +315,12 @@ export default function AdminInventory() {
             className="bg-[var(--bg-panel)] backdrop-blur-xl border border-[var(--border)] rounded-xl shadow-[var(--shadow-glass)] p-6 overflow-hidden relative"
           >
             {/* Status Bar */}
-            <div className="absolute top-0 left-0 right-0 bg-black/80 px-6 py-2 flex items-center justify-between border-b border-[var(--border)]">
+              <div className="absolute top-0 left-0 right-0 bg-black/80 px-6 py-2 flex items-center justify-between border-b border-[var(--border)]">
               <div className="flex items-center gap-2">
-                <WifiOff size={14} className="text-[var(--critical)]" />
-                <span className="text-[10px] font-mono font-bold text-[var(--critical)] tracking-widest">SATELLITE OFFLINE</span>
+                <Satellite size={14} className="text-[var(--accent-primary)]" />
+                <span className="text-[10px] font-mono font-bold text-[var(--accent-primary)] tracking-widest">ADMIN DECISIONS</span>
               </div>
-              <span className="text-[10px] font-mono text-[var(--text-secondary)]">STORE & FORWARD OUTBOUND</span>
+              <span className="text-[10px] font-mono text-[var(--text-secondary)]">{currentOutbound.length} recorded</span>
             </div>
 
             <h3 className="text-lg font-bold text-[var(--text-primary)] font-['Space_Grotesk'] mb-4 mt-8 flex items-center gap-2">

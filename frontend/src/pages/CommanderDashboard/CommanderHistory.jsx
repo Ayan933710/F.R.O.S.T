@@ -5,7 +5,7 @@ const historyEntries = [
  { time: '08:47', action: 'Received Admin approval for 12x Seismic Sensors. Inbound dispatch logged.', icon: Shield, severity: 'normal' },
  { time: '08:00', action: 'Adjusted local inventory count via Edge Node: Aviation Turbine Fuel (ATF) [-50 Liters].', icon: Zap, severity: 'warning' },
  { time: '07:30', action: 'Successfully verified inbound Cargo Manifest (Hash: 0x9f8b7e2c) at Bay 3-Alpha.', icon: PackageCheck, severity: 'normal' },
- { time: '07:12', action: 'Local CRDT sync established. IndexedDB merge completed without conflicts.', icon: Shield, severity: 'normal' },
+ { time: '07:12', action: 'Inventory sync completed.', icon: Shield, severity: 'normal' },
  { time: '06:45', action: 'Adjusted local inventory count via Edge Node: Epinephrine [+10 Vials].', icon: Zap, severity: 'normal' },
  { time: '06:00', action: 'Satellite Link severed (Blackout Window). Store & Forward queue activated.', icon: AlertTriangle, severity: 'critical' },
 ];

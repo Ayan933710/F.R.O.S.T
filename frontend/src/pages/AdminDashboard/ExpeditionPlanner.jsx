@@ -25,17 +25,27 @@ import {
  GripVertical,
  Check,
  Plus,
+ Pencil,
+ Trash2,
  X,
  AlertTriangle,
  Minus,
 } from 'lucide-react';
 import { useIceNet } from '../../context/IceNetContext';
+import InventoryDemandPanel from './InventoryDemandPanel';
 
-const flights = [
+const defaultFlights = [
  { id: 'CHF-301', route: 'Cape Town → Maitri', date: '2026-10-05', duration: 8, offset: 0, status: 'Confirmed', window: 'Oct 1 - Oct 8' },
  { id: 'CHF-302', route: 'Christchurch → Bharati', date: '2026-10-12', duration: 12, offset: 3, status: 'Pending', window: 'Oct 4 - Oct 16' },
  { id: 'CHF-303', route: 'Tromsø → Himadri', date: '2026-10-18', duration: 5, offset: 6, status: 'Confirmed', window: 'Oct 7 - Oct 12' },
 ];
+
+const getFlightStatusColor = (status) => {
+ if (status === 'Confirmed') return 'var(--ok)';
+ if (status === 'Delayed' || status === 'Cancelled') return 'var(--critical)';
+ if (status === 'Planned') return 'var(--text-secondary)';
+ return 'var(--accent-primary)';
+};
 
 const initialSummerTeam = [
  { id: 's1', name: 'Dr. Elena Vasquez', role: 'Lead Glaciologist' },
@@ -50,20 +60,20 @@ const initialWinterTeam = [
  { id: 'w3', name: 'Eng. Yuki Tanaka', role: 'Mechanical Engineer' },
 ];
 
-const budgetData = [
+const defaultBudgetData = [
  { name: 'Charter Flights', value: 4.2, color: '#3B82F6' },
  { name: 'Cold Logistics', value: 1.8, color: '#F43F5E' },
  { name: 'Reserve', value: 2.1, color: '#4ade80' },
 ];
 
-const CustomPieTooltip = ({ active, payload }) => {
+const CustomPieTooltip = ({ active, payload, total }) => {
  if (active && payload && payload.length) {
   const data = payload[0];
   return (
    <div className="bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] p-2.5 rounded-lg shadow-xl font-['Work_Sans'] text-xs">
     <p className="font-semibold text-[var(--text-primary)]">{data.name}</p>
     <p className="text-[var(--accent-primary)] font-mono font-bold mt-0.5">
-     ₹{data.value} Cr ({((data.value / 8.1) * 100).toFixed(1)}%)
+    ₹{Number(data.value).toFixed(1)} Cr ({(total > 0 ? (data.value / total) * 100 : 0).toFixed(1)}%)
     </p>
    </div>
   );
@@ -73,10 +83,111 @@ const CustomPieTooltip = ({ active, payload }) => {
 
 export default function ExpeditionPlanner() {
  const { sealedManifestHash, setSealedManifestHash } = useIceNet();
+ const [flights, setFlights] = useState(defaultFlights);
+ const [budgetData, setBudgetData] = useState(defaultBudgetData);
+ const [flightDraft, setFlightDraft] = useState([]);
+ const [budgetDraft, setBudgetDraft] = useState([]);
+ const [isScheduleEditing, setIsScheduleEditing] = useState(false);
+ const [isBudgetEditing, setIsBudgetEditing] = useState(false);
+ const [isPlannerSaving, setIsPlannerSaving] = useState(false);
+ const [plannerNotice, setPlannerNotice] = useState('');
+
+ useEffect(() => {
+  let cancelled = false;
+    fetch('http://localhost:5000/api/v1/expeditions/ISEA-46')
+     .then(response => {
+       if (!response.ok) throw new Error(`Could not load expedition plan (${response.status})`);
+    return response.json();
+   })
+   .then(expedition => {
+     if (cancelled) return;
+     if (Array.isArray(expedition.charter_schedule)) setFlights(expedition.charter_schedule);
+     if (Array.isArray(expedition.budget_allocation)) setBudgetData(expedition.budget_allocation);
+   })
+   .catch(error => {
+    if (!cancelled) setPlannerNotice(error.message);
+   });
+
+  return () => { cancelled = true; };
+ }, []);
+
+ const savePlannerFields = async (fields) => {
+  setIsPlannerSaving(true);
+  setPlannerNotice('');
+  try {
+   const response = await fetch('http://localhost:5000/api/v1/expeditions/ISEA-46', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(fields),
+   });
+   const result = await response.json();
+   if (!response.ok) throw new Error(result.error || `Save failed (${response.status})`);
+   setPlannerNotice('Planner changes saved.');
+   return result.expedition;
+  } catch (error) {
+   setPlannerNotice(error.message || 'Could not save planner changes.');
+   return null;
+  } finally {
+   setIsPlannerSaving(false);
+  }
+ };
+
+ const updateFlightDraft = (flightId, field, value) => {
+  setFlightDraft(current => current.map(flight => {
+   const updated = { ...flight, [field]: field === 'duration' ? Number(value) : value };
+   if (field === 'date' && value) {
+    const start = new Date('2026-10-01T00:00:00');
+    const scheduled = new Date(`${value}T00:00:00`);
+    updated.offset = Math.max(0, Math.min(25, Math.round((scheduled - start) / 86400000)));
+   }
+   return flight.id === flightId ? updated : flight;
+  }));
+ };
+
+ const addFlightDraft = () => {
+  setFlightDraft(current => {
+   const nextId = current.reduce((maxId, flight) => {
+    const number = Number(flight.id.match(/\d+$/)?.[0] || 0);
+    return Math.max(maxId, number);
+   }, 300) + 1;
+   return [...current, {
+    id: `CHF-${nextId}`,
+    route: '',
+    date: '2026-10-01',
+    duration: 1,
+    offset: 0,
+    status: 'Planned',
+    window: 'To be scheduled',
+   }];
+  });
+ };
+
+ const ganttDays = Math.max(25, ...flights.map(flight => Math.max(0, Number(flight.offset) || 0) + Math.max(1, Number(flight.duration) || 1)));
+ const ganttStart = new Date('2026-10-01T00:00:00');
+ const ganttTicks = Array.from({ length: 6 }, (_, index) => {
+  const date = new Date(ganttStart.getTime() + (ganttDays * index / 5) * 86400000);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+ });
+
+ const handleAutomateBudget = () => {
+  setIsBudgetEditing(true);
+  setBudgetDraft([
+   { name: 'Charter Flights', value: 5.5, color: '#3B82F6' },
+   { name: 'Cold Logistics', value: 2.8, color: '#F43F5E' },
+   { name: 'Asset Demand Reserve', value: 3.5, color: '#eab308' },
+   { name: 'Reserve', value: 2.0, color: '#4ade80' },
+  ]);
+ };
+
+ const displayedBudgetData = isBudgetEditing ? budgetDraft : budgetData;
+ const budgetTotal = displayedBudgetData.reduce((total, entry) => total + Number(entry.value || 0), 0);
+ const reserveAmount = displayedBudgetData.find(entry => entry.name.toLowerCase() === 'reserve')?.value || 0;
 
  // ML Prediction state
  const [isPredicting, setIsPredicting] = useState(false);
  const [predictionResult, setPredictionResult] = useState(null);
+ const [predictionError, setPredictionError] = useState('');
+ const [weatherStation, setWeatherStation] = useState('maitri');
 
  // Cryptographic Sealing state
  const [isSealing, setIsSealing] = useState(false);
@@ -141,20 +252,44 @@ export default function ExpeditionPlanner() {
   setIsAddRosterOpen(false);
  };
 
- const handlePredictWindow = () => {
+ const handlePredictWindow = async () => {
   setIsPredicting(true);
   setPredictionResult(null);
-  setTimeout(() => {
-   setIsPredicting(false);
+  setPredictionError('');
+  try {
+   const weatherResponse = await fetch(`http://localhost:5000/api/v1/aws/current?station=${weatherStation}`);
+   const weather = await weatherResponse.json();
+   if (!weatherResponse.ok) throw new Error(weather.error || 'Live weather unavailable');
+
+   const predictionUrl = new URL('http://localhost:5000/api/v1/ml/predict-window');
+   Object.entries({
+    U10: weather.U10,
+    pressure_drop: weather.pressure_drop,
+    temperature: weather.temperature,
+    humidity: weather.humidity,
+    timestamp: weather.timestamp,
+    station: weather.station_id,
+   }).forEach(([key, value]) => predictionUrl.searchParams.set(key, value));
+
+   const predictionResponse = await fetch(predictionUrl);
+   const prediction = await predictionResponse.json();
+   if (!predictionResponse.ok || prediction.error) throw new Error(prediction.error || 'Weather model unavailable');
+
    setPredictionResult({
-    probability: '94%',
-    message: 'CLEARANCE: 94% Probability of Clear Window. Safe for Launch.',
-    model: 'FastAPI XGBoost Polar-v4.2 (Inference: 18ms)',
-    surfaceWind: '12 knots (Gusts 16kt)',
-    visibility: '> 10 km (Zero Whiteout Risk)',
-    windowValid: '2026-10-08 18:00 UTC',
+    safe: prediction.safe,
+    probability: Math.round(Number(prediction.probability) * 100),
+    temperature: weather.temperature,
+    wind: weather.U10,
+    visibilityKm: weather.visibility_km,
+    observedAt: weather.timestamp,
+    source: weather.source,
+    stale: weather.stale,
    });
-  }, 2000);
+  } catch (error) {
+   setPredictionError(error.message || 'Unable to fetch weather estimate.');
+  } finally {
+   setIsPredicting(false);
+  }
  };
 
  const addEmptyItem = (e) => {
@@ -203,14 +338,12 @@ export default function ExpeditionPlanner() {
   <div className="bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border border-[var(--border)] rounded-xl p-6 h-full flex flex-col overflow-hidden overflow-x-hidden w-full max-w-full">
    {/* Dashboard Header */}
    <div className="flex items-center justify-between mb-6 shrink-0 pb-4 border-b border-[var(--border)]">
-    <div>
-     <h2 className="text-[var(--accent-primary)] font-['Space_Grotesk'] font-bold text-2xl tracking-wide">
-      EXPEDITION PLANNER · COMMAND DECK
-     </h2>
-     <p className="text-[var(--text-secondary)] text-xs font-['Work_Sans']">
-      Charter Scheduling · Dynamic INR Capital Budget · Interactive Roster Drag-Drop · Launch Control AI
-     </p>
-    </div>
+        <div>
+      <h2 className="text-[var(--accent-primary)] font-['Space_Grotesk'] font-bold text-2xl tracking-wide">
+       EXPEDITION PLANNER · COMMAND DECK
+      </h2>
+      <p className="text-[var(--text-secondary)] text-xs font-['Work_Sans']">ISEA-46 · 2026–27</p>
+        </div>
 
     <div className="flex items-center gap-3">
      <div className="flex items-center gap-2 bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[var(--shadow-glass)] px-3.5 py-1.5 rounded-lg border border-[var(--border)] text-xs font-mono">
@@ -223,6 +356,13 @@ export default function ExpeditionPlanner() {
 
    {/* Main Scrollable Body */}
    <div className="flex-1 overflow-y-auto space-y-6 pr-1">
+    {plannerNotice && (
+     <p role="status" className="border-b border-[var(--border)] pb-3 text-xs text-[var(--text-secondary)]">
+      {plannerNotice}
+     </p>
+    )}
+    <InventoryDemandPanel />
+
     {/* ─── Top Row: Timeline & Interactive Budget ─── */}
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
      {/* Timeline Gantt */}
@@ -230,33 +370,56 @@ export default function ExpeditionPlanner() {
       {/* Header & Status Legend */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-[var(--border)]">
        <div>
-        <h3 className="text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-widest flex items-center gap-2">
-         <Plane size={15} className="text-[var(--accent-primary)]" />
-         Chartered Flight Schedule (Gantt)
+         <h3 className="text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-widest flex items-center gap-2">
+          <Plane size={15} className="text-[var(--accent-primary)]" />
+          Expedition Roster
         </h3>
         {/* Status Legend */}
         <div className="flex items-center gap-4 text-xs font-['Work_Sans'] mt-2">
          <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-[var(--ok)]" />
-          <span className="text-[var(--text-secondary)]">Confirmed Flight</span>
+          <span className="text-[var(--text-secondary)]">Confirmed (planner-entered)</span>
          </div>
          <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-[var(--accent-primary)]" />
-          <span className="text-[var(--text-secondary)]">Pending Clearance</span>
+          <span className="text-[var(--text-secondary)]">Pending (planner-entered)</span>
          </div>
         </div>
        </div>
 
-       <span className="text-[10px] text-[var(--ok)] bg-[var(--ok)]/10 px-2.5 py-1 rounded border border-[var(--ok)] font-semibold font-mono self-start sm:self-center">
-        3 Charters Scheduled
+      <div className="flex items-center gap-2 self-start sm:self-center">
+       {isScheduleEditing ? (
+        <button
+         type="button"
+         onClick={addFlightDraft}
+         className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border border-[var(--accent-primary)] text-[var(--accent-primary)] text-[10px] font-semibold hover:bg-[var(--accent-primary)]/10"
+        >
+         <Plus size={12} /> Add charter
+        </button>
+       ) : (
+        <button
+         type="button"
+         onClick={() => {
+          setFlightDraft(flights.map(flight => ({ ...flight })));
+          setIsScheduleEditing(true);
+          setPlannerNotice('');
+         }}
+         className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border border-[var(--border)] text-[var(--text-secondary)] text-[10px] font-semibold hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)]"
+        >
+         <Pencil size={12} /> Edit schedule
+        </button>
+       )}
+       <span className="text-[10px] text-[var(--ok)] bg-[var(--ok)]/10 px-2.5 py-1 rounded border border-[var(--ok)] font-semibold font-mono">
+        {flights.length} Charters Scheduled
        </span>
+      </div>
       </div>
 
       <div className="space-y-3.5 mb-2">
        <div className="flex items-center text-[10px] text-[var(--text-secondary)] uppercase tracking-wider">
         <div className="w-36 shrink-0 font-medium">Vessel / Route</div>
         <div className="flex-1 relative h-4 font-mono text-[10px]">
-         {['Oct 1', 'Oct 6', 'Oct 11', 'Oct 16', 'Oct 21', 'Oct 26'].map((d, i) => (
+         {ganttTicks.map((d, i) => (
           <span
            key={d}
            className={`absolute whitespace-nowrap ${
@@ -293,9 +456,9 @@ export default function ExpeditionPlanner() {
           <div
            className="group absolute top-1 bottom-1 rounded transition-all duration-300 hover:brightness-110 cursor-pointer flex items-center px-2 z-10"
            style={{
-            left: `${(f.offset / 25) * 100}%`,
-            width: `${(f.duration / 25) * 100}%`,
-            backgroundColor: f.status === 'Confirmed' ? 'var(--ok)' : 'var(--accent-primary)',
+            left: `${(Math.max(0, Number(f.offset) || 0) / ganttDays) * 100}%`,
+            width: `${(Math.max(1, Number(f.duration) || 1) / ganttDays) * 100}%`,
+            backgroundColor: getFlightStatusColor(f.status),
             opacity: 0.9,
            }}
           >
@@ -311,14 +474,11 @@ export default function ExpeditionPlanner() {
              <span className="text-[var(--accent-primary)]">Route: {f.route}</span>
             </div>
             <div className="text-[10px] text-[var(--text-secondary)] font-mono mt-0.5 flex items-center gap-2">
-             <span>Window: {f.window}</span>
+             <span>Date: {f.date} · {f.duration} days</span>
              <span>|</span>
              <span
-              className={
-               f.status === 'Confirmed'
-                ? 'text-[var(--ok)] font-semibold'
-                : 'text-[var(--accent-primary)] font-semibold'
-              }
+              className="font-semibold"
+              style={{ color: getFlightStatusColor(f.status) }}
              >
               Status: {f.status}
              </span>
@@ -327,15 +487,90 @@ export default function ExpeditionPlanner() {
           </div>
          </div>
          <span
-          className={`text-[10px] font-semibold w-16 text-right font-mono ${
-           f.status === 'Confirmed' ? 'text-[var(--ok)]' : 'text-[var(--accent-primary)]'
-          }`}
+          className="w-16 text-right font-mono text-[10px] font-semibold"
+          style={{ color: getFlightStatusColor(f.status) }}
          >
           {f.status}
          </span>
         </div>
        ))}
       </div>
+
+      {isScheduleEditing && (
+       <div className="mt-4 border-t border-[var(--border)] pt-4">
+        <p className="mb-3 text-[10px] text-[var(--text-secondary)]">Status is manually set by the planner; it is not verified against weather, clearance, or dispatch systems.</p>
+        <div className="grid grid-cols-[minmax(64px,0.7fr)_minmax(130px,2fr)_minmax(120px,1fr)_90px_120px_36px] gap-2 mb-2 text-[10px] text-[var(--text-secondary)] uppercase">
+         <span>Charter</span><span>Route</span><span>Date</span><span>Days</span><span>Status</span><span />
+        </div>
+        <div className="space-y-2">
+         {flightDraft.map(flight => (
+          <div key={flight.id} className="grid grid-cols-[minmax(64px,0.7fr)_minmax(130px,2fr)_minmax(120px,1fr)_90px_120px_36px] gap-2 items-center">
+           <span className="text-xs font-semibold text-[var(--text-primary)]">{flight.id}</span>
+           <input
+        aria-label={`${flight.id} route`}
+        value={flight.route}
+        onChange={event => updateFlightDraft(flight.id, 'route', event.target.value)}
+        className="min-w-0 bg-[var(--bg-primary)] border border-[var(--border)] px-2 py-1.5 text-xs text-[var(--text-primary)]"
+           />
+           <input
+        aria-label={`${flight.id} date`}
+        type="date"
+        value={flight.date}
+        onChange={event => updateFlightDraft(flight.id, 'date', event.target.value)}
+        className="min-w-0 bg-[var(--bg-primary)] border border-[var(--border)] px-2 py-1.5 text-xs text-[var(--text-primary)]"
+           />
+           <input
+        aria-label={`${flight.id} duration in days`}
+        type="number"
+        min="1"
+        max="25"
+        value={flight.duration}
+        onChange={event => updateFlightDraft(flight.id, 'duration', event.target.value)}
+        className="min-w-0 bg-[var(--bg-primary)] border border-[var(--border)] px-2 py-1.5 text-xs text-[var(--text-primary)]"
+           />
+           <select
+        aria-label={`${flight.id} status`}
+        value={flight.status}
+        onChange={event => updateFlightDraft(flight.id, 'status', event.target.value)}
+        className="min-w-0 bg-[var(--bg-primary)] border border-[var(--border)] px-2 py-1.5 text-xs text-[var(--text-primary)]"
+           >
+          <option>Planned</option>
+          <option>Pending</option>
+          <option>Confirmed</option>
+          <option>Delayed</option>
+          <option>Cancelled</option>
+           </select>
+            <button
+            type="button"
+            aria-label={`Remove ${flight.id}`}
+            title={`Remove ${flight.id}`}
+            onClick={() => setFlightDraft(current => current.filter(entry => entry.id !== flight.id))}
+            className="flex size-8 items-center justify-center border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--critical)] hover:text-[var(--critical)]"
+            >
+            <Trash2 size={14} />
+            </button>
+          </div>
+         ))}
+        </div>
+        <div className="mt-3 flex justify-end gap-2">
+         <button type="button" onClick={() => setIsScheduleEditing(false)} className="px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]">Cancel</button>
+         <button
+          type="button"
+          disabled={isPlannerSaving || new Set(flightDraft.map(flight => flight.id)).size !== flightDraft.length || flightDraft.some(flight => !flight.route.trim() || !flight.date || !Number.isFinite(flight.duration) || flight.duration < 1 || !['Planned', 'Pending', 'Confirmed', 'Delayed', 'Cancelled'].includes(flight.status))}
+          onClick={async () => {
+           const result = await savePlannerFields({ charter_schedule: flightDraft });
+           if (result) {
+        setFlights(result.charter_schedule || flightDraft);
+        setIsScheduleEditing(false);
+           }
+          }}
+          className="px-3 py-1.5 border border-[var(--accent-primary)] text-xs font-semibold text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/10 disabled:opacity-50"
+         >
+          {isPlannerSaving ? 'Saving...' : 'Save schedule'}
+         </button>
+        </div>
+       </div>
+      )}
 
       <div className="text-[10px] text-[var(--text-secondary)] pt-3 border-t border-[var(--border)] font-mono flex justify-between">
        <span>Primary Air Corridor: Cape Town ↔ Schirmacher Oasis</span>
@@ -348,19 +583,56 @@ export default function ExpeditionPlanner() {
       <div className="flex items-center justify-between mb-2">
        <h3 className="text-[var(--text-secondary)] text-xs uppercase tracking-widest font-semibold flex items-center gap-2">
         <IndianRupee size={15} className="text-[var(--accent-primary)]" />
-        INR Budget Allocation (₹8.1 Cr Total)
+        INR Budget Allocation (₹{budgetTotal.toFixed(1)} Cr Total)
        </h3>
+             {isBudgetEditing ? (
+        <div className="flex items-center gap-2">
+         <button type="button" onClick={() => { setIsBudgetEditing(false); setBudgetDraft([]); }} className="px-2 py-1 text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]">Cancel</button>
+         <button type="button" onClick={() => setBudgetDraft([...budgetDraft, { name: 'New Field', value: 0, color: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0') }])} className="px-2 py-1 text-[10px] text-[var(--ok)] border border-[var(--ok)]/50 hover:bg-[var(--ok)]/10 rounded">
+          <Plus size={10} className="inline mr-1"/> Add Field
+         </button>
+         <button
+          type="button"
+          disabled={isPlannerSaving || budgetDraft.some(entry => !entry.name.trim() || !Number.isFinite(Number(entry.value)) || Number(entry.value) < 0)}
+          onClick={async () => {
+           const allocations = budgetDraft.map(entry => ({ ...entry, value: Number(entry.value) }));
+           const result = await savePlannerFields({ budget_allocation: allocations });
+           if (result) {
+            setBudgetData(result.budget_allocation || allocations);
+            setIsBudgetEditing(false);
+            setBudgetDraft([]);
+           }
+          }}
+          className="px-2 py-1 border border-[var(--accent-primary)] text-[10px] font-semibold text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/10 disabled:opacity-50 rounded"
+         >
+          {isPlannerSaving ? 'Saving...' : 'Save budget'}
+         </button>
+        </div>
+             ) : (
+        <div className="flex items-center gap-2">
+         <button type="button" onClick={handleAutomateBudget} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border border-[var(--accent-primary)] text-[var(--accent-primary)] text-[10px] font-semibold hover:bg-[var(--accent-primary)]/10 rounded">
+          <BrainCircuit size={12} /> Automate Budget
+         </button>
+         <button
+          type="button"
+          onClick={() => { setBudgetDraft(budgetData.map(entry => ({ ...entry }))); setIsBudgetEditing(true); setPlannerNotice(''); }}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border border-[var(--border)] text-[var(--text-secondary)] text-[10px] font-semibold hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)] rounded"
+         >
+          <Pencil size={12} /> Edit budget
+         </button>
+        </div>
+             )}
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-6 items-center w-full my-auto">
+      <div className={`${isBudgetEditing ? 'grid grid-cols-1 gap-4' : 'grid grid-cols-[minmax(0,1fr)_auto] gap-6'} items-center w-full my-auto min-w-0`}>
        {/* Donut Chart */}
        <div className="w-full flex items-center justify-center py-1 min-w-0">
         <div className="w-40 h-40 relative flex items-center justify-center shrink-0">
          <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-           <Tooltip content={<CustomPieTooltip />} />
+           <Tooltip content={<CustomPieTooltip total={budgetTotal} />} />
            <Pie
-            data={budgetData}
+            data={displayedBudgetData}
             dataKey="value"
             nameKey="name"
             cx="50%"
@@ -370,24 +642,24 @@ export default function ExpeditionPlanner() {
             stroke="none"
             paddingAngle={3}
            >
-            {budgetData.map((entry) => (
+            {displayedBudgetData.map((entry) => (
              <Cell key={entry.name} fill={entry.color} />
             ))}
            </Pie>
           </PieChart>
          </ResponsiveContainer>
-         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none overflow-hidden">
           <span className="text-[9px] text-[var(--text-secondary)] uppercase tracking-wider">Total</span>
-          <span className="font-['Space_Grotesk'] font-bold text-base text-[var(--accent-primary)] leading-none mt-0.5">₹8.1 Cr</span>
+          <span className="w-full px-1 text-center whitespace-nowrap font-['Space_Grotesk'] font-bold text-sm text-[var(--accent-primary)] leading-none mt-0.5">₹{budgetTotal.toFixed(1)} Cr</span>
          </div>
         </div>
        </div>
 
        {/* Dense Flex Legend */}
-       <div className="flex flex-col gap-2.5 font-['Work_Sans'] w-full">
-        {budgetData.map((b) => (
+      <div className={`flex flex-col gap-2.5 font-['Work_Sans'] w-full min-w-0 ${isBudgetEditing ? 'max-h-56' : 'max-h-48'} overflow-y-auto pr-1`}>
+        {displayedBudgetData.map((b, index) => (
          <div
-          key={b.name}
+          key={isBudgetEditing ? index : b.name}
           className="flex items-center justify-between bg-[var(--bg-primary)] border border-[var(--border)] rounded px-3 py-2 w-full gap-6"
          >
           <div className="flex items-center gap-2 min-w-0">
@@ -395,13 +667,37 @@ export default function ExpeditionPlanner() {
             className="w-2.5 h-2.5 rounded-full shrink-0"
             style={{ backgroundColor: b.color }}
            />
-           <span className="text-[var(--text-primary)] text-sm font-medium whitespace-nowrap">
-            {b.name}
-           </span>
+           {isBudgetEditing ? (
+            <input
+             aria-label={`Budget category ${index + 1}`}
+             value={budgetDraft[index]?.name ?? ''}
+             onChange={event => setBudgetDraft(current => current.map((entry, entryIndex) => entryIndex === index ? { ...entry, name: event.target.value } : entry))}
+             className="w-32 min-w-0 bg-[var(--bg-panel-raised)] border border-[var(--border)] px-2 py-1 text-xs text-[var(--text-primary)]"
+            />
+           ) : (
+            <span className="text-[var(--text-primary)] text-sm font-medium whitespace-nowrap">{b.name}</span>
+           )}
           </div>
-          <span className="whitespace-nowrap font-mono text-sm font-bold text-[var(--text-primary)]">
-           ₹{b.value} Cr
-          </span>
+          {isBudgetEditing ? (
+           <div className="flex items-center gap-2">
+            <label className="flex items-center gap-1 whitespace-nowrap text-xs text-[var(--text-secondary)]">
+             ₹<input
+              aria-label={`${b.name} budget in crore INR`}
+              type="number"
+              min="0"
+              step="0.1"
+              value={budgetDraft[index]?.value ?? ''}
+              onChange={event => setBudgetDraft(current => current.map((entry, entryIndex) => entryIndex === index ? { ...entry, value: event.target.value === '' ? '' : Number(event.target.value) } : entry))}
+              className="w-20 bg-[var(--bg-panel-raised)] border border-[var(--border)] px-2 py-1 text-xs text-[var(--text-primary)]"
+             /> Cr
+            </label>
+            <button type="button" onClick={() => setBudgetDraft(current => current.filter((_, i) => i !== index))} className="text-[var(--critical)] hover:text-white p-1">
+             <X size={14} />
+            </button>
+           </div>
+          ) : (
+           <span className="whitespace-nowrap font-mono text-sm font-bold text-[var(--text-primary)]">₹{Number(b.value).toFixed(1)} Cr</span>
+          )}
          </div>
         ))}
        </div>
@@ -409,7 +705,7 @@ export default function ExpeditionPlanner() {
 
       <div className="text-[10px] text-[var(--text-secondary)] pt-2 border-t border-[var(--border)] font-mono flex justify-between">
        <span>Financial Authority: MoES/NCPOR</span>
-       <span className="text-[var(--ok)]">Reserve: ₹2.1 Cr (26%)</span>
+      <span className="text-[var(--ok)]">Reserve: ₹{Number(reserveAmount).toFixed(1)} Cr ({(budgetTotal > 0 ? (reserveAmount / budgetTotal) * 100 : 0).toFixed(0)}%)</span>
       </div>
      </div>
     </div>
@@ -420,11 +716,8 @@ export default function ExpeditionPlanner() {
       <div>
        <h3 className="text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-widest flex items-center gap-2 mb-1">
         <Users size={15} className="text-[var(--accent-primary)]" />
-        Tactile Drag-and-Drop Roster Planning
+        EXPEDITION ROSTER
        </h3>
-       <span className="text-[10px] text-[var(--text-secondary)] font-mono">
-        Reorder personnel priority by dragging cards vertically
-       </span>
       </div>
       <button 
        onClick={() => setIsAddRosterOpen(true)}
@@ -573,12 +866,9 @@ export default function ExpeditionPlanner() {
       <div className="flex items-center gap-2">
        <Cpu size={16} className="text-[var(--accent-primary)]" />
        <h3 className="text-[var(--accent-primary)] font-['Space_Grotesk'] font-bold text-lg tracking-wider">
-        LAUNCH CONTROL & LOGISTICS AI
+        WEATHER & LAUNCH CONTROL
        </h3>
       </div>
-      <span className="text-[10px] font-mono text-[var(--text-secondary)]">
-       FastAPI Inference Engine & Cryptographic Broadcast Gateway
-      </span>
      </div>
 
      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -588,12 +878,17 @@ export default function ExpeditionPlanner() {
         <div className="flex items-center gap-2 mb-2">
          <BrainCircuit size={18} className="text-[var(--accent-primary)]" />
          <h4 className="text-[var(--text-primary)] text-sm font-semibold uppercase tracking-wider">
-          XGBoost Weather Window Inference
+          Weather Window
          </h4>
         </div>
-        <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-6">
-         Aggregates Katabatic pressure anomalies, whiteout radar, and polar vortex velocity to calculate chartered launch probabilities.
-        </p>
+        <label className="block mb-4 text-[10px] uppercase text-[var(--text-secondary)]">
+         Station
+         <select value={weatherStation} onChange={event => setWeatherStation(event.target.value)} className="mt-1 block w-full bg-[var(--bg-primary)] border border-[var(--border)] px-3 py-2 text-xs text-[var(--text-primary)]">
+          <option value="maitri">Maitri</option>
+          <option value="bharati">Bharati</option>
+          <option value="himadri">Himadri</option>
+         </select>
+        </label>
        </div>
 
        <div>
@@ -606,12 +901,12 @@ export default function ExpeditionPlanner() {
          {isPredicting ? (
           <>
            <Loader size={16} className="animate-spin" />
-           <span>Computing Gradient Boosted Ensemble...</span>
+           <span>Fetching live weather...</span>
           </>
          ) : (
           <>
            <BrainCircuit size={16} />
-           <span>RUN XGBOOST WEATHER MODEL</span>
+           <span>CHECK WEATHER WINDOW</span>
           </>
          )}
         </button>
@@ -623,40 +918,42 @@ export default function ExpeditionPlanner() {
            animate={{ opacity: 1, y: 0, scale: 1 }}
            exit={{ opacity: 0, y: -10 }}
            transition={{ duration: 0.3 }}
-           className="mt-4 p-4 rounded-xl border-2 border-[var(--ok)] bg-[var(--ok)]/10 shadow-[0_0_30px_rgba(74,222,128,0.15)]"
+           className={`mt-4 p-4 rounded-xl border-2 ${predictionResult.safe ? 'border-[var(--ok)] bg-[var(--ok)]/10' : 'border-[var(--critical)] bg-[var(--critical)]/10'}`}
           >
            <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-[var(--ok)]/20 text-[var(--ok)] shrink-0">
-             <CheckCircle size={22} />
+             <div className={`p-2 rounded-lg shrink-0 ${predictionResult.safe ? 'bg-[var(--ok)]/20 text-[var(--ok)]' : 'bg-[var(--critical)]/20 text-[var(--critical)]'}`}>
+             {predictionResult.safe ? <CheckCircle size={22} /> : <AlertTriangle size={22} />}
             </div>
             <div className="flex-1">
              <div className="flex items-center justify-between">
-              <h5 className="text-[var(--ok)] font-['Space_Grotesk'] font-bold text-lg tracking-wide">
-               {predictionResult.message}
+              <h5 className={`font-['Space_Grotesk'] font-bold text-lg tracking-wide ${predictionResult.safe ? 'text-[var(--ok)]' : 'text-[var(--critical)]'}`}>
+               {predictionResult.safe ? 'WITHIN MODEL THRESHOLD' : 'NO-GO · WEATHER LIMIT EXCEEDED'}
               </h5>
-              <span className="text-[10px] font-mono text-[var(--ok)] bg-[var(--ok)]/20 px-2 py-0.5 rounded font-bold">
-               CONFIDENCE: {predictionResult.probability}
+              <span className="text-[10px] font-mono text-[var(--text-primary)] bg-[var(--bg-panel-raised)] px-2 py-0.5 rounded font-bold">
+               WHITEOUT RISK · {predictionResult.probability}%
               </span>
              </div>
 
              <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-[var(--ok)]/20 text-xs text-[var(--text-secondary)]">
               <div className="flex items-center gap-1.5">
-               <Wind size={13} className="text-[var(--ok)]" />
-               <span>Wind: <strong className="text-[var(--text-primary)]">{predictionResult.surfaceWind}</strong></span>
+               <Wind size={13} className="text-[var(--accent-primary)]" />
+               <span>Wind: <strong className="text-[var(--text-primary)]">{Number(predictionResult.wind).toFixed(1)} m/s</strong></span>
               </div>
               <div className="flex items-center gap-1.5">
-               <Compass size={13} className="text-[var(--ok)]" />
-               <span>Vis: <strong className="text-[var(--text-primary)]">{predictionResult.visibility}</strong></span>
+               <Compass size={13} className="text-[var(--accent-primary)]" />
+               <span>Visibility: <strong className="text-[var(--text-primary)]">{Number(predictionResult.visibilityKm).toFixed(1)} km</strong></span>
               </div>
               <div className="col-span-2 text-[10px] text-[var(--text-secondary)] mt-1 font-mono">
-               Model: {predictionResult.model} · Window Open: {predictionResult.windowValid}
+               {predictionResult.source}{predictionResult.stale ? ' · STALE DATA' : ''} · Observed {new Date(predictionResult.observedAt).toLocaleString()}
               </div>
+              <p className="col-span-2 text-[10px] text-amber-400">Model trained on synthetic data; not validated for dispatch decisions.</p>
              </div>
             </div>
            </div>
           </motion.div>
          )}
         </AnimatePresence>
+        {predictionError && <p role="alert" className="mt-3 text-xs text-[var(--critical)]">{predictionError}</p>}
        </div>
       </div>
 
@@ -674,9 +971,6 @@ export default function ExpeditionPlanner() {
            <Plus size={14} /> Create Seal
          </button>
         </div>
-        <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-6">
-         Locks cargo manifests into permanent SHA-256 states. Cryptographic digests are broadcast across all edge stations.
-        </p>
        </div>
 
        <div className="flex flex-col gap-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
@@ -770,9 +1064,6 @@ export default function ExpeditionPlanner() {
                     <h2 className="text-lg font-bold text-[var(--text-primary)] font-['Space_Grotesk'] tracking-wide">
                       {sealStep === 'CREATE' ? 'Draft New Manifest' : 'Review & Seal Manifest'}
                     </h2>
-                    <p className="text-xs text-[var(--text-secondary)]">
-                      {sealStep === 'CREATE' ? 'Build the cargo list to be cryptographically sealed.' : 'Irreversible cryptographic hashing.'}
-                    </p>
                   </div>
                 </div>
                 <button onClick={() => setIsSealModalOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--critical)] transition-colors">
@@ -805,7 +1096,6 @@ export default function ExpeditionPlanner() {
                       <div className="flex items-center justify-between mb-2 pb-2 border-b border-[var(--border)]">
                         <div>
                           <label className="text-[10px] text-[var(--text-secondary)] uppercase font-bold tracking-widest block">Cargo Line Items</label>
-                          <span className="text-[10px] text-[var(--accent-primary)] font-medium">Pre-filled from approved requisitions</span>
                         </div>
                         <div className="flex gap-2">
                           <button onClick={addEmptyItem} className="text-xs font-bold text-[var(--accent-primary)] hover:text-blue-400 flex items-center gap-1.5 px-3 py-1.5 bg-[var(--accent-primary)]/10 rounded-lg transition-colors"><Plus size={14}/> Add Asset</button>
@@ -869,7 +1159,7 @@ export default function ExpeditionPlanner() {
                      </div>
                      <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl flex items-start gap-3">
                         <AlertTriangle size={20} className="text-amber-500 shrink-0 mt-0.5" />
-                        <p className="text-sm text-amber-500 font-medium leading-relaxed">WARNING: Sealing this manifest generates an immutable SHA-256 hash broadcast to the edge nodes. This action cannot be reversed or edited after sealing.</p>
+                        <p className="text-sm text-amber-500 font-medium leading-relaxed">Sealing is permanent. Verify the manifest before continuing.</p>
                      </div>
                   </div>
                 )}

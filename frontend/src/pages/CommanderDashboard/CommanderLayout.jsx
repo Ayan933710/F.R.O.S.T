@@ -53,7 +53,7 @@ export default function CommanderLayout() {
  };
 
  return (
-  <div className="h-screen w-full bg-[var(--bg-primary)] flex flex-col relative overflow-hidden">
+  <div className="dashboard-shell h-screen w-full bg-[var(--bg-primary)] flex flex-col relative overflow-hidden">
    <NavigationBar />
 
    <div className="flex flex-1 min-h-0 overflow-hidden">
@@ -81,7 +81,7 @@ export default function CommanderLayout() {
         className="flex items-center justify-center gap-2 text-[var(--critical)] text-xs border border-[var(--critical)] p-2 rounded hover:bg-[var(--critical)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
        >
         <AlertTriangle size={14} />
-        Debug: Trigger LoRa SOS
+        Test SOS
        </button>
      </div>
     </aside>
