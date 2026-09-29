@@ -1,12 +1,6 @@
 const axios = require('axios');
-const { PrismaClient } = require('@prisma/client');
-const { PrismaPg } = require('@prisma/adapter-pg');
-const { Pool } = require('pg');
-
-const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const Item = require('../models/Item');
+const Requisition = require('../models/Requisition');
 
 const ML_URL = process.env.ML_URL || 'http://localhost:8000';
 
@@ -15,14 +9,12 @@ async function getPredictiveInsights(req, res) {
     const station = req.query.station || 'Himadri';
     
     // 1. Fetch latest DB state
-    const items = await prisma.item.findMany({ 
-      where: { station: { equals: station, mode: 'insensitive' } } 
+    const items = await Item.find({ 
+      station: new RegExp('^' + station + '$', 'i')
     });
-    const requisitions = await prisma.requisition.findMany({ 
-      where: { 
-        station: { equals: station, mode: 'insensitive' }, 
-        status: 'PENDING_APPROVAL' 
-      } 
+    const requisitions = await Requisition.find({ 
+      station: new RegExp('^' + station + '$', 'i'), 
+      status: 'PENDING_APPROVAL' 
     });
     
     // 2. Generate 14-day Projected Burn Rate (Mocked baseline based on inventory)

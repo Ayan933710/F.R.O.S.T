@@ -30,7 +30,7 @@ function flushMovementQueue() {
 
   movementSyncPromise = (async () => {
     while (true) {
-      const [movement, ...remaining] = readMovementQueue();
+      const [movement] = readMovementQueue();
       if (!movement) break;
 
       try {

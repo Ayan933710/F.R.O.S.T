@@ -11,7 +11,6 @@ import {
  Lock,
  Wifi,
  Radio,
- Compass,
  CheckCircle,
 } from 'lucide-react';
 import { ComposableMap, Geographies, Geography, Graticule, Marker, Line } from 'react-simple-maps';

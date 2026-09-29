@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { AlertTriangle, MapPin, Activity, Radio, Siren, UserCheck, VolumeX } from 'lucide-react';
+import { AlertTriangle, MapPin, Activity, Radio, Siren, VolumeX } from 'lucide-react';
 
 export default function EmergencyOverlay({ onClose }) {
  return (

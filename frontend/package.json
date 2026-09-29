@@ -16,7 +16,6 @@
     "autoprefixer": "^10.6.1",
     "axios": "^1.20.0",
     "framer-motion": "^13.4.4",
-    "html5-qrcode": "^2.3.8",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.48.0",
     "postcss": "^8.5.28",
@@ -28,8 +27,6 @@
     "recharts": "^3.10.1",
     "tailwindcss": "^4.3.3",
     "three": "^0.186.1",
-    "y-protocols": "^1.0.7",
-    "y-websocket": "^3.1.0",
     "yjs": "^13.6.33"
   },
   "devDependencies": {

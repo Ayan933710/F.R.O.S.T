@@ -9,14 +9,23 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
 require('dotenv/config');
-const { PrismaClient } = require('@prisma/client');
-const { PrismaPg } = require('@prisma/adapter-pg');
-const { Pool } = require('pg');
 
-const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const mongoose = require('mongoose');
+const CrdtSnapshot = require('./models/CrdtSnapshot');
+const User = require('./models/User');
+const Expedition = require('./models/Expedition');
+const Roster = require('./models/Roster');
+const Geofence = require('./models/Geofence');
+const Item = require('./models/Item');
+const InventoryMovement = require('./models/InventoryMovement');
+const Requisition = require('./models/Requisition');
+const Manifest = require('./models/Manifest');
+const Telemetry = require('./models/Telemetry');
+const AuditLog = require('./models/AuditLog');
+
+mongoose.connect(process.env.MONGO_URI || process.env.DATABASE_URL)
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 const app = express();
 app.use(cors({ origin: 'http://localhost:5173' }));
@@ -25,8 +34,7 @@ app.use('/api/v1/sync/crdt-binary', express.raw({ type: 'application/octet-strea
 
 async function createAuditLog(category, action, severity, metadata = {}) {
   try {
-    await prisma.auditLog.create({
-      data: {
+    await AuditLog.create({
         log_id: `LOG-${crypto.randomUUID().substring(0, 8)}`,
         category,
         action,
@@ -36,8 +44,7 @@ async function createAuditLog(category, action, severity, metadata = {}) {
         details: metadata.requestDetails || null,
         status: metadata.status || null,
         signature_hash: metadata.signatureHash || null,
-      }
-    });
+      });
   } catch (err) {
     console.error('Failed to create audit log:', err);
   }
@@ -45,7 +52,7 @@ async function createAuditLog(category, action, severity, metadata = {}) {
 
 app.get('/api/v1/audit', async (req, res) => {
   try {
-    const logs = await prisma.auditLog.findMany({ orderBy: { timestamp: 'desc' }, take: 50 });
+    const logs = await AuditLog.find().sort({ timestamp: -1 }).limit(50);
     const mapped = logs.map(l => ({
       id: l.log_id,
       timestamp: l.timestamp,
@@ -68,7 +75,7 @@ app.get('/api/v1/audit', async (req, res) => {
 
 app.get('/api/health', async (req, res) => {
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    if (mongoose.connection.readyState !== 1) throw new Error('Database not connected');
     res.json({ status: 'pass', database: 'connected' });
   } catch (error) {
     res.status(500).json({ status: 'fail', error: error.message });
@@ -89,11 +96,7 @@ function schedulePersist() {
   persistTimer = setTimeout(async () => {
     try {
       const state = Buffer.from(Y.encodeStateAsUpdate(globalDoc));
-      await prisma.crdtSnapshot.upsert({
-        where: { doc_id: 'global' },
-        update: { state, updated_at: new Date() },
-        create: { doc_id: 'global', state }
-      });
+      await CrdtSnapshot.findOneAndUpdate({ doc_id: 'global' }, { state, updated_at: new Date() }, { upsert: true, new: true });
     } catch (_) {}
   }, 2000);
 }
@@ -115,7 +118,6 @@ server.on('upgrade', (request, socket, head) => {
 });
 
 wssCrdt.on('connection', (ws) => {
-  console.log('[CRDT-WS] client connected');
   const serverSV = Y.encodeStateVector(globalDoc);
   ws.send(JSON.stringify({ type: 'sv', sv: Array.from(serverSV) }));
   const fullUpdate = Y.encodeStateAsUpdate(globalDoc);
@@ -170,11 +172,11 @@ app.get('/api/v1/sync/crdt/state', (_req, res) => {
   res.json({ state: Array.from(Y.encodeStateAsUpdate(globalDoc)) });
 });
 
-// Load CRDT snapshot from Prisma on startup
-prisma.crdtSnapshot.findUnique({ where: { doc_id: 'global' } }).then((snap) => {
+// Load CRDT snapshot from MongoDB on startup
+CrdtSnapshot.findOne({ doc_id: 'global' }).then((snap) => {
   if (snap && snap.state) {
     Y.applyUpdate(globalDoc, new Uint8Array(snap.state));
-    console.log('[CRDT] Restored canonical doc from PostgreSQL snapshot');
+    console.log('[CRDT] Restored canonical doc from MongoDB snapshot');
   }
 }).catch(() => {});
 
@@ -185,7 +187,7 @@ app.post('/api/v1/auth/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
 
-  const user = await prisma.user.findUnique({ where: { username } });
+  const user = await User.findOne({ username });
   if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
   // For seed users without hash, accept their usernames as passwords for demo fallback
@@ -238,21 +240,18 @@ app.get('/api/v1/research-centers/:id', (req, res) => {
 // Expeditions CRUD
 // ─────────────────────────────────────────────────────────────────────────────
 app.get('/api/v1/expeditions', async (req, res) => {
-  const records = await prisma.expedition.findMany();
+  const records = await Expedition.find();
   res.json(records);
 });
 const { getExpeditionById } = require('./controllers/expeditionController');
 app.get('/api/v1/expeditions/:id', getExpeditionById);
 app.post('/api/v1/expeditions', async (req, res) => {
   const data = { ...req.body, expedition_id: req.body.expedition_id || `EXP-${Date.now()}` };
-  const e = await prisma.expedition.create({ data });
+  const e = await Expedition.create(data);
   res.json({ success: true, expedition: e });
 });
 app.patch('/api/v1/expeditions/:id', async (req, res) => {
-  const e = await prisma.expedition.update({
-    where: { expedition_id: req.params.id },
-    data: req.body
-  });
+  const e = await Expedition.findOneAndUpdate({ expedition_id: req.params.id }, req.body, { new: true });
   res.json({ success: true, expedition: e });
 });
 
@@ -260,28 +259,25 @@ app.patch('/api/v1/expeditions/:id', async (req, res) => {
 // Roster CRUD
 // ─────────────────────────────────────────────────────────────────────────────
 app.get('/api/v1/roster', async (req, res) => {
-  const records = await prisma.roster.findMany();
+  const records = await Roster.find();
   res.json(records);
 });
 app.get('/api/v1/roster/:id', async (req, res) => {
-  const r = await prisma.roster.findUnique({ where: { personnel_id: req.params.id } });
+  const r = await Roster.findOne({ personnel_id: req.params.id });
   if (!r) return res.status(404).json({ error: 'Not found' });
   res.json(r);
 });
 app.post('/api/v1/roster', async (req, res) => {
   const data = { ...req.body, personnel_id: req.body.personnel_id || `PER-${Date.now()}` };
-  const personnel = await prisma.roster.create({ data });
+  const personnel = await Roster.create(data);
   res.json({ success: true, personnel });
 });
 app.patch('/api/v1/roster/:id', async (req, res) => {
-  const personnel = await prisma.roster.update({
-    where: { personnel_id: req.params.id },
-    data: req.body
-  });
+  const personnel = await Roster.findOneAndUpdate({ personnel_id: req.params.id }, req.body, { new: true });
   res.json({ success: true, personnel });
 });
 app.delete('/api/v1/roster/:id', async (req, res) => {
-  await prisma.roster.delete({ where: { personnel_id: req.params.id } });
+  await Roster.findOneAndDelete({ personnel_id: req.params.id });
   res.json({ success: true });
 });
 
@@ -289,15 +285,15 @@ app.delete('/api/v1/roster/:id', async (req, res) => {
 // Geofence CRUD
 // ─────────────────────────────────────────────────────────────────────────────
 app.get('/api/v1/geofences', async (req, res) => {
-  res.json(await prisma.geofence.findMany());
+  res.json(await Geofence.find());
 });
 app.post('/api/v1/geofences', async (req, res) => {
   const data = { ...req.body, geofence_id: req.body.geofence_id || `GF-${Date.now()}` };
-  const geofence = await prisma.geofence.create({ data });
+  const geofence = await Geofence.create(data);
   res.json({ success: true, geofence });
 });
 app.delete('/api/v1/geofences/:id', async (req, res) => {
-  await prisma.geofence.delete({ where: { geofence_id: req.params.id } });
+  await Geofence.findOneAndDelete({ geofence_id: req.params.id });
   res.json({ success: true });
 });
 
@@ -328,7 +324,7 @@ app.get('/api/v1/ais/vessel/:mmsi', (req, res) => {
 let loraSimInterval = null;
 app.post('/api/v1/simulator/lora/start', async (req, res) => {
   if (loraSimInterval) return res.json({ message: 'Already running' });
-  const personnel = await prisma.roster.findMany();
+  const personnel = await Roster.find();
   let tick = 0;
 
   loraSimInterval = setInterval(() => {
@@ -362,8 +358,8 @@ app.post('/api/v1/simulator/lora/stop', (req, res) => {
 
 app.post('/api/v1/simulator/lora/sos', async (req, res) => {
   const { personnel_id } = req.body;
-  let person = await prisma.roster.findUnique({ where: { personnel_id } });
-  if (!person) person = (await prisma.roster.findMany())[0] || { personnel_id: 'EXP-BIO-04', blood_type: 'Unknown', allergies: 'Unknown', name: 'Unknown', role: 'Unknown' };
+  let person = await Roster.findOne({ personnel_id });
+  if (!person) person = (await Roster.find())[0] || { personnel_id: 'EXP-BIO-04', blood_type: 'Unknown', allergies: 'Unknown', name: 'Unknown', role: 'Unknown' };
   
   const payload = {
     node_id: person.personnel_id,
@@ -497,13 +493,13 @@ app.post('/api/v1/cargo/manifest', async (req, res) => {
     return res.status(400).json({ error: 'manifest_id, destination, vessel, and cargo items are required' });
   }
   
-  const existing = await prisma.manifest.findUnique({ where: { manifest_id } });
+  const existing = await Manifest.findOne({ manifest_id });
   if (existing) return res.status(409).json({ error: 'Manifest already exists' });
   
   const data = { manifest_id, destination, vessel, status: 'Draft', items, vessel_mmsi: vessel_mmsi || null, crypto_hash: null, sealed_at: null, sealed_payload_json: null, tamper_detected: false, tamper_alerts: [] };
   
   try {
-    const saved = await prisma.manifest.create({ data });
+    const saved = await Manifest.create(data);
     return res.status(201).json({ success: true, manifest: saved });
   } catch (error) {
     return res.status(503).json({ error: 'Unable to persist manifest', detail: error.message });
@@ -511,7 +507,7 @@ app.post('/api/v1/cargo/manifest', async (req, res) => {
 });
 
 app.post('/api/v1/cargo/manifest/:id/seal', async (req, res) => {
-  const manifest = await prisma.manifest.findUnique({ where: { manifest_id: req.params.id } });
+  const manifest = await Manifest.findOne({ manifest_id: req.params.id });
   if (!manifest) return res.status(404).json({ error: 'Manifest not found' });
   if (manifest.crypto_hash) return res.status(409).json({ error: 'Already sealed' });
   
@@ -519,10 +515,7 @@ app.post('/api/v1/cargo/manifest/:id/seal', async (req, res) => {
   const canonicalJson = canonicalJsonStringify(payloadObj);
   const hash = crypto.createHash('sha256').update(canonicalJson, 'utf8').digest('hex');
   
-  const updated = await prisma.manifest.update({
-    where: { manifest_id: manifest.manifest_id },
-    data: { crypto_hash: hash, sealed_at: new Date(), sealed_payload_json: canonicalJson, status: 'Packed (Goa)', updated_at: new Date() }
-  });
+  const updated = await Manifest.findOneAndUpdate({ manifest_id: manifest.manifest_id }, { crypto_hash: hash, sealed_at: new Date(), sealed_payload_json: canonicalJson, status: 'Packed (Goa)', updated_at: new Date() }, { new: true });
   await createAuditLog('Transport', `Manifest ${manifest.manifest_id} sealed and cryptographically signed`, 'info', {
     adminId: 'GOA-HQ-01',
     requestDetails: `Destination: ${manifest.destination}, Vessel: ${manifest.vessel}`,
@@ -535,24 +528,21 @@ app.post('/api/v1/cargo/manifest/:id/seal', async (req, res) => {
 app.patch('/api/v1/cargo/manifest/:id/status', async (req, res) => {
   const { status: newStatus } = req.body;
   if (!VALID_STATUSES.includes(newStatus)) return res.status(400).json({ error: 'Invalid status' });
-  const manifest = await prisma.manifest.findUnique({ where: { manifest_id: req.params.id } });
+  const manifest = await Manifest.findOne({ manifest_id: req.params.id });
   if (!manifest) return res.status(404).json({ error: 'Not found' });
   const curIdx = VALID_STATUSES.indexOf(manifest.status);
   const tgtIdx = VALID_STATUSES.indexOf(newStatus);
   if (tgtIdx <= curIdx) return res.status(400).json({ error: `Cannot move backward` });
   if (tgtIdx >= 2 && !manifest.crypto_hash) return res.status(400).json({ error: 'Must seal first' });
   
-  const updated = await prisma.manifest.update({
-    where: { manifest_id: manifest.manifest_id },
-    data: { status: newStatus, updated_at: new Date() }
-  });
+  const updated = await Manifest.findOneAndUpdate({ manifest_id: manifest.manifest_id }, { status: newStatus, updated_at: new Date() }, { new: true });
   res.json({ success: true, manifest: updated });
 });
 
 app.post('/api/v1/cargo/verify', async (req, res) => {
   const { manifest_id, items, destination, vessel, vessel_mmsi } = req.body;
   if (!manifest_id || !items) return res.status(400).json({ error: 'manifest_id and items required' });
-  const manifest = await prisma.manifest.findUnique({ where: { manifest_id } });
+  const manifest = await Manifest.findOne({ manifest_id });
   if (!manifest) return res.status(404).json({ error: 'Not found' });
   if (!manifest.crypto_hash) return res.status(400).json({ error: 'Never sealed' });
   
@@ -570,14 +560,11 @@ app.post('/api/v1/cargo/verify', async (req, res) => {
     const alert = { detected_at: new Date(), incoming_hash: incomingHash, stored_hash: manifest.crypto_hash, details: `Sealed: ${manifest.sealed_payload_json} | Incoming: ${incomingCanonical}` };
     const tamperAlerts = Array.isArray(manifest.tamper_alerts) ? manifest.tamper_alerts : [];
     
-    await prisma.manifest.update({
-      where: { manifest_id: manifest.manifest_id },
-      data: { tamper_alerts: [...tamperAlerts, alert], tamper_detected: true, updated_at: new Date() }
-    });
+    await Manifest.findOneAndUpdate({ manifest_id: manifest.manifest_id }, { tamper_alerts: [...tamperAlerts, alert], tamper_detected: true, updated_at: new Date() }, { new: true });
     return res.status(400).json({ error: 'TAMPER ALERT', hash_mismatch: true, stored_hash: manifest.crypto_hash, incoming_hash: incomingHash, sealed_payload: manifest.sealed_payload_json, incoming_payload: incomingCanonical, alert });
   }
   if (manifest.status !== 'Delivered (Base)') { 
-    await prisma.manifest.update({ where: { manifest_id: manifest.manifest_id }, data: { status: 'Delivered (Base)', updated_at: new Date() } });
+    await Manifest.findOneAndUpdate({ manifest_id: manifest.manifest_id }, { status: 'Delivered (Base)', updated_at: new Date() }, { new: true });
   }
   res.json({ success: true, message: 'Integrity verified', stored_hash: manifest.crypto_hash, incoming_hash: incomingHash });
 });
@@ -588,21 +575,14 @@ app.post('/api/v1/cargo/verify-hash', async (req, res) => {
   if (!manifestId || !/^[a-f0-9]{64}$/.test(scannedHash)) {
     return res.status(400).json({ error: 'manifest_id and a 64-character SHA-256 hash are required' });
   }
-  const manifest = await prisma.manifest.findUnique({ where: { manifest_id: manifestId } });
+  const manifest = await Manifest.findOne({ manifest_id: manifestId });
   if (!manifest) return res.status(404).json({ error: 'Manifest not found' });
   if (!manifest.crypto_hash) return res.status(409).json({ error: 'Manifest has not been sealed' });
 
   const matches = scannedHash === String(manifest.crypto_hash).toLowerCase();
   if (!matches) {
     const tamperAlerts = Array.isArray(manifest.tamper_alerts) ? manifest.tamper_alerts : [];
-    await prisma.manifest.update({
-      where: { manifest_id: manifest.manifest_id },
-      data: {
-        tamper_detected: true,
-        tamper_alerts: [...tamperAlerts, { detected_at: new Date(), scanned_hash: scannedHash, stored_hash: manifest.crypto_hash, method: 'manual_hash_comparison' }],
-        updated_at: new Date()
-      }
-    });
+    await Manifest.findOneAndUpdate({ manifest_id: manifest.manifest_id }, { tamper_detected: true, tamper_alerts: [...tamperAlerts, { detected_at: new Date(), scanned_hash: scannedHash, stored_hash: manifest.crypto_hash, method: 'manual_hash_comparison' }], updated_at: new Date() }, { new: true });
   }
 
   res.json({
@@ -618,21 +598,18 @@ app.post('/api/v1/cargo/verify-hash', async (req, res) => {
 });
 
 app.get('/api/v1/cargo/manifests/latest', async (req, res) => {
-  const latest = await prisma.manifest.findFirst({
-    where: { crypto_hash: { not: null } },
-    orderBy: { sealed_at: 'desc' }
-  });
+  const latest = await Manifest.findOne({ crypto_hash: { $ne: null } }).sort({ sealed_at: -1 });
   if (!latest) return res.status(404).json({ error: 'No sealed manifest found' });
   res.json(latest);
 });
 
 app.get('/api/v1/cargo/manifest/:id', async (req, res) => {
-  const m = await prisma.manifest.findUnique({ where: { manifest_id: req.params.id } });
+  const m = await Manifest.findOne({ manifest_id: req.params.id });
   if (!m) return res.status(404).json({ error: 'Not found' });
   res.json(m);
 });
 app.get('/api/v1/cargo/manifests', async (req, res) => {
-  res.json(await prisma.manifest.findMany());
+  res.json(await Manifest.find());
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -642,7 +619,7 @@ app.post('/api/v1/telemetry/ingest', async (req, res) => {
   const dataStr = JSON.stringify({ type: 'telemetry', data: req.body });
   wssTelemetry.clients.forEach(c => { if (c.readyState === WebSocket.OPEN) c.send(dataStr); });
   wssCrdt.clients.forEach(c => { if (c.readyState === WebSocket.OPEN) c.send(dataStr); });
-  try { await prisma.telemetry.create({ data: req.body }); } catch (_) {}
+  try { await Telemetry.create(req.body); } catch (_) {}
   res.json({ success: true });
 });
 
@@ -661,20 +638,17 @@ app.get('/api/v1/ml/predict-window', async (req, res) => {
 
 app.get('/api/v1/inventory', async (req, res) => {
   try { 
-    const items = await prisma.item.findMany();
+    const items = await Item.find();
     return res.json(items.map(i => ({...i, qty: i.quantity})));
   } catch (e) { res.status(500).json({ error: e.message }); } 
 });
 app.post('/api/v1/inventory', async (req, res) => {
-  try { const i = await prisma.item.create({ data: req.body }); return res.json(i); } catch (e) { res.status(500).json({ error: e.message }); }
+  try { const i = await Item.create(req.body); return res.json(i); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/api/v1/requisitions', async (req, res) => {
   const station = req.query.station ? String(req.query.station).toLowerCase() : undefined;
-  const records = await prisma.requisition.findMany({
-    where: station ? { station: { equals: station, mode: 'insensitive' } } : undefined,
-    orderBy: { created_at: 'desc' }
-  });
+  const records = await Requisition.find(station ? { station: new RegExp("^" + station + "$", "i") } : {}).sort({ created_at: -1 });
   res.json(records);
 });
 
@@ -702,7 +676,7 @@ app.post('/api/v1/requisitions', async (req, res) => {
   };
 
   try {
-    const saved = await prisma.requisition.create({ data: record });
+    const saved = await Requisition.create(record);
     await createAuditLog('Inventory Request', `Commander (${station}) requested ${quantity} ${record.unit} of ${item}`, urgency === 'CRITICAL' ? 'critical' : 'info', {
       commanderId: `CMD-${station.toUpperCase()}`,
       requestDetails: `Urgency: ${urgency}`,
@@ -718,15 +692,12 @@ app.patch('/api/v1/requisitions/:id', async (req, res) => {
   const decision = String(req.body.decision || '').toUpperCase();
   if (!['APPROVED', 'DENIED'].includes(decision)) return res.status(400).json({ error: 'decision must be APPROVED or DENIED' });
   
-  const record = await prisma.requisition.findUnique({ where: { requisition_id: req.params.id } });
+  const record = await Requisition.findOne({ requisition_id: req.params.id });
   if (!record) return res.status(404).json({ error: 'Requisition not found' });
   if (record.status !== 'PENDING_APPROVAL') return res.status(409).json({ error: 'Requisition is already decided' });
 
   try {
-    const updated = await prisma.requisition.update({
-      where: { requisition_id: req.params.id },
-      data: { status: decision, decided_by: String(req.body.decided_by || 'admin'), updated_at: new Date() }
-    });
+    const updated = await Requisition.findOneAndUpdate({ requisition_id: req.params.id }, { status: decision, decided_by: String(req.body.decided_by || 'admin'), updated_at: new Date() }, { new: true });
     await createAuditLog('Inventory Request', `Admin ${decision.toLowerCase()} request for ${record.quantity} ${record.unit} of ${record.item}`, decision === 'DENIED' ? 'warning' : 'info', {
       adminId: String(req.body.decided_by || 'GOA-HQ-01'),
       commanderId: `CMD-${record.station.toUpperCase()}`,
@@ -780,10 +751,10 @@ app.post('/api/v1/inventory/movements', async (req, res) => {
   };
 
   try {
-    const existing = await prisma.inventoryMovement.findUnique({ where: { client_event_id: String(client_event_id) } });
+    const existing = await InventoryMovement.findOne({ client_event_id: String(client_event_id) });
     if (existing) return res.status(200).json({ success: true, movement: existing, duplicate: true });
 
-    const saved = await prisma.inventoryMovement.create({ data: movement });
+    const saved = await InventoryMovement.create(movement);
     
     if (delta !== 0) {
       await createAuditLog('Logistics', `Inventory adjusted via Edge Node: ${name} [${delta > 0 ? '+' : ''}${delta} ${unit}]`, delta < 0 ? 'warning' : 'info', {
@@ -801,10 +772,7 @@ app.post('/api/v1/inventory/movements', async (req, res) => {
 
 app.get('/api/v1/inventory/forecast', async (req, res) => {
   const station = req.query.station ? String(req.query.station) : null;
-  const databaseMovements = await prisma.inventoryMovement.findMany({
-    where: station ? { station } : undefined,
-    orderBy: { recorded_at: 'asc' }
-  });
+  const databaseMovements = await InventoryMovement.find(station ? { station } : {}).sort({ recorded_at: 1 });
 
   const now = Date.now();
   const lookbackStart = now - 90 * 24 * 60 * 60 * 1000;

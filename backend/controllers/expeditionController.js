@@ -1,11 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-const { PrismaPg } = require('@prisma/adapter-pg');
-const { Pool } = require('pg');
-
-const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const Expedition = require('../models/Expedition');
 
 async function getExpeditionById(req, res) {
   const { id } = req.params;
@@ -25,7 +18,7 @@ async function getExpeditionById(req, res) {
   }
 
   try {
-    const e = await prisma.expedition.findUnique({ where: { expedition_id: id } });
+    const e = await Expedition.findOne({ expedition_id: id });
     if (!e) return res.status(404).json({ error: 'Not found' });
     res.json(e);
   } catch (error) {

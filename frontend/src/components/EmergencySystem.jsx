@@ -14,7 +14,7 @@ export default function EmergencySystem() {
      // Play siren
      try {
       const audio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='); // Stubbed for siren
-      audio.play().catch(e => console.log('Audio autoplay blocked'));
+      audio.play().catch(e => {});
      } catch(e) {}
     }
    }

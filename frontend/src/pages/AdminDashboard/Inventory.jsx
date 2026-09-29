@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Database, WifiOff, AlertTriangle, CheckCircle, Clock, Search, X, Satellite, MapPin, Activity } from 'lucide-react';
+import { Database, CheckCircle, Clock, Search, X, Satellite, MapPin, Activity } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function AdminInventory() {

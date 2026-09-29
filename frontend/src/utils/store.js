@@ -115,7 +115,6 @@ export const syncStatus = doc.getMap('syncStatus');
     const snap = await loadSnapshot();
     if (snap) {
       Y.applyUpdate(doc, new Uint8Array(snap));
-      console.log('[CRDT] Restored local doc from IndexedDB snapshot');
     }
   } catch (e) {
     console.warn('[CRDT] Could not restore snapshot:', e);
@@ -164,7 +163,6 @@ export function setupSync(wsUrl) {
       isConnected = true;
       syncStatus.set('connected', true);
       window.dispatchEvent(new CustomEvent('syncStatusChange', { detail: { connected: true } }));
-      console.log('[CRDT-WS] connected');
 
       // Send our state vector so the server can reply with just the diff
       const sv = Y.encodeStateVector(doc);
@@ -214,7 +212,6 @@ export function setupSync(wsUrl) {
       isConnected = false;
       syncStatus.set('connected', false);
       window.dispatchEvent(new CustomEvent('syncStatusChange', { detail: { connected: false } }));
-      console.log('[CRDT-WS] disconnected — will reconnect');
       scheduleReconnect();
     };
 
@@ -249,7 +246,6 @@ export function setupSync(wsUrl) {
     try {
       const pending = await getAllPendingUpdates();
       if (pending.length === 0) return;
-      console.log(`[CRDT] Flushing ${pending.length} queued offline updates`);
       for (const arr of pending) {
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'update', update: arr }));
@@ -274,7 +270,6 @@ export function setupSync(wsUrl) {
         }
       }
       await clearPendingUpdates();
-      console.log('[CRDT] Offline queue flushed');
     } catch (e) {
       console.warn('[CRDT] Flush error:', e);
     }
