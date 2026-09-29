@@ -1,242 +1,125 @@
-# ❄️ HEEM_SANCHAR / ICE-NET (F.R.O.S.T)
-> **Integrated Polar Expedition Logistics and Asset Management System**
-
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
-![Express.js](https://img.shields.io/badge/Express.js-404D59?style=for-the-badge)
-![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
-![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)
-![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=FastAPI&logoColor=white)
-![Yjs](https://img.shields.io/badge/Yjs-CRDT-blue?style=for-the-badge)
-
-F.R.O.S.T (Forward Resupply & Operations Support Terminal) ICE-NET is a resilient, offline-capable 3-tier micro-architecture platform designed for extreme-climate or tactical logistics tracking. It ensures seamless supply requisition, cold-chain inventory monitoring, and collaborative real-time updates across multiple research stations (e.g., Maitri, Bharati, Himadri) even in low-bandwidth or disconnected environments.
+<div align="center">
+  <h1>❄️ F.R.O.S.T</h1>
+  <p><b>Polar Logistics Command</b></p>
+  <p>Tactical logistics, cold-chain inventory tracking, and real-time research station monitoring for extreme environments.</p>
+  
+  <div>
+    <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+    <img src="https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" />
+    <img src="https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
+    <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
+    <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+  </div>
+</div>
 
 ---
 
-## 🏗️ System Architecture
+## 🚀 Active Features
 
-The F.R.O.S.T platform utilizes a decoupled 3-tier architecture:
+- **3-Column Dynamic Station Overview:** Seamless admin dashboards managing polar stations (Maitri, Bharati, Himadri) with responsive flex-grid layouts.
+- **Real-Time Meteorological Telemetry:** Deep integration with the Open-Meteo REST API, streaming live surface temperature, wind speed, relative humidity, atmospheric pressure, and visibility straight to operational cards.
+- **Dynamic Personnel Rosters:** Direct MongoDB aggregation pipelines powering the "Active Rosters" interface, gracefully rendering tactical empty-states when stations are vacant.
+- **Simulated High-Frequency Radar:** A real-time telemetry array rendering live operational nodes using Recharts and responsive containers.
+- **Collaborative State Sync:** Utilizing Yjs (CRDT) for conflict-free, real-time localized state synchronization across the logistics network.
 
-```text
-┌─────────────────┐       WebSocket (Yjs CRDT)       ┌──────────────────┐
-│                 │      HTTP REST API (Axios)       │                  │
-│  React Frontend ├─────────────────────────────────►│  Node.js Backend │
-│  (Vite + Yjs)   │                                  │  (Express.js)    │
-│                 │                                  │                  │
-└─────────────────┘                                  └────────┬─────────┘
-                                                              │
-                                                        HTTP (REST)
-                                                              │
-┌──────────────────┐                                 ┌────────▼─────────┐
-│                  │                                 │                  │
-│ MongoDB Atlas    │◄─────── Mongoose ODM ───────────┤   Python ML      │
-│ (Persistence)    │                                 │   Service        │
-│                  │                                 │  (FastAPI)       │
-└──────────────────┘                                 └──────────────────┘
+## 📂 Project Structure
+
+The architecture is divided into three primary microservices:
+
+```ascii
+F.R.O.S.T/
+├── backend/               # Node.js + Express API Orchestrator
+│   ├── controllers/
+│   ├── models/            # Mongoose Schemas (User, Item, Requisition, Manifest)
+│   ├── routes/
+│   └── server.js
+├── frontend/              # React + Vite Client
+│   ├── src/
+│   │   ├── components/    # Reusable UI (Navbars, Modals)
+│   │   ├── pages/         # Admin & Commander Dashboards
+│   │   └── utils/         # Yjs store configurations
+│   └── package.json
+└── ml_service/            # Python Microservice
+    ├── main.py            # FastAPI / Uvicorn server
+    └── requirements.txt
 ```
 
----
+## 🛠️ Zero-to-Hero Local Setup Guide
 
-## 🛠️ Tech Stack Breakdown
+Follow this sequential setup to deploy F.R.O.S.T flawlessly on your local machine. 
 
-### 1. Frontend (Client)
-- **Framework:** React 19 + Vite
-- **Styling:** Tailwind CSS + Lucide React Icons
-- **State/Sync:** Yjs (CRDT engine) + IndexedDB (offline persistence)
-- **Maps:** Leaflet & React Simple Maps
+**Prerequisites:** 
+- Node.js (v18+)
+- Python (v3.10+)
+- Git
 
-### 2. Backend API (Server)
-- **Runtime:** Node.js (v18+)
-- **Framework:** Express.js
-- **Database ODM:** Mongoose
-- **Sync Server:** Custom Yjs WebSocket server attached to Express
-- **Security:** JWT, bcryptjs, CORS
+### Step 1: Environment Configuration
+Create a `.env` file inside the `backend/` directory. You will need to provide your MongoDB Atlas connection string.
 
-### 3. ML Service (Prediction Engine)
-- **Language:** Python (3.10+)
-- **Framework:** FastAPI / Uvicorn
-- **ML Libraries:** XGBoost, Scikit-Learn, Pandas, Numpy, Joblib
-- **Role:** Predictive baseline stock thresholds, transport window safety inference, and consumption modeling.
-
-### 4. Database & Storage
-- **Provider:** MongoDB Atlas (Cloud)
-- **Models:** Users, Items, Requisitions, Manifests, Expeditions, AuditLogs, Geofences.
-
----
-
-## 📂 Directory Structure
-
-```text
-HEEM_SANCHAR/
-├── backend/                  # Node.js + Express API
-│   ├── controllers/          # Business logic & route handlers
-│   ├── models/               # Mongoose schemas (User, Item, Manifest, etc.)
-│   ├── .env                  # Environment variables (Mongo URI, Ports)
-│   ├── package.json          # Node dependencies
-│   ├── seed.js               # Mock data baseline seeder
-│   └── server.js             # Express application & Yjs WS server entrypoint
-│
-├── frontend/                 # React + Vite Client
-│   ├── public/               # Static assets (3D models, videos)
-│   ├── src/                  # React source code
-│   │   ├── components/       # Reusable UI components
-│   │   ├── context/          # React Context (Auth, Theme)
-│   │   ├── pages/            # Admin & Commander dashboards
-│   │   └── utils/            # CRDT Store, API helpers
-│   ├── index.html            # Entry HTML
-│   ├── package.json          # Frontend dependencies
-│   └── vite.config.js        # Vite bundler configuration
-│
-└── ml_service/               # Python Predictive Microservice
-    ├── main.py               # FastAPI application entrypoint
-    ├── train_model.py        # XGBoost model training script
-    ├── requirements.txt      # Python dependencies
-    └── xgboost_model.joblib  # Trained model binary
-```
-
----
-
-## 📋 Prerequisites
-
-To run this project locally, ensure you have the following installed:
-- **Node.js** (v18+ or v20+) & **npm**
-- **Python** (v3.10+)
-- **Git**
-- **MongoDB Atlas** Account (or local MongoDB instance)
-
----
-
-## ⚙️ Environment Configuration
-
-Create a `.env` file in the **`backend/`** directory. (The `ml_service` runs on default port `8000` and doesn't require a `.env` out of the box unless specified).
-
-**`backend/.env` Template:**
-```env
-# Server Configuration
+```bash
+# backend/.env
 PORT=5000
-
-# Database Connection (MongoDB)
-MONGO_URI=mongodb+srv://<username>:<password>@cluster0.example.mongodb.net/frost_db?retryWrites=true&w=majority
-
-# JWT Authentication
-JWT_SECRET=your_super_secret_jwt_key_here
-
-# Machine Learning Service URL
-ML_URL=http://localhost:8000
+MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/frost?retryWrites=true&w=majority
 ```
 
----
+### Step 2: Backend Initialization
+Open a terminal, navigate to the backend, install the dependencies, and ignite the Express server.
 
-## 🚀 End-to-End Installation & Quickstart Guide
-
-Open three separate terminal windows to run the microservices simultaneously.
-
-### Step 1: MongoDB Database Setup & Seeding
-In Terminal 1, set up the backend and seed the database with baseline mock data:
 ```bash
-# Navigate to backend
 cd backend
-
-# Install dependencies
 npm install
-
-# Make sure your .env file is configured!
-# Seed the MongoDB database with baseline users and items
-node seed.js
-```
-
-### Step 2: Backend API Launch
-Still in Terminal 1, start the Node.js server:
-```bash
-# Start the Express server and Yjs WebSocket
 npm run dev
 ```
-*(Runs on `http://localhost:5000`)*
 
-### Step 3: ML Microservice Launch
-In Terminal 2, set up the Python virtual environment and run FastAPI:
+### Step 3: Frontend Initialization
+Open a second terminal instance to deploy the Vite React application.
+
 ```bash
-# Navigate to ml_service
+cd frontend
+npm install
+npm run dev
+```
+
+### Step 4: ML Service Initialization
+Open a third terminal instance to boot up the Python microservice.
+
+```bash
 cd ml_service
 
 # Create virtual environment
-python -m venv .venv
+python -m venv venv
 
 # Activate virtual environment
-# On Windows (PowerShell):
-.\.venv\Scripts\Activate.ps1
-# On Mac/Linux:
-# source .venv/bin/activate
+# --> For Windows:
+.\venv\Scripts\activate
+# --> For Mac/Linux:
+source venv/bin/activate
 
-# Install requirements
+# Install requirements and run server
 pip install -r requirements.txt
-
-# Start the FastAPI server
 python -m uvicorn main:app --reload
 ```
-*(Runs on `http://localhost:8000`)*
 
-### Step 4: Frontend UI Launch
-In Terminal 3, install and run the Vite client:
-```bash
-# Navigate to frontend
-cd frontend
+## 🗄️ API & Database Reference
 
-# Install dependencies
-npm install
+F.R.O.S.T is backed by a robust MongoDB Atlas schema designed for supply chain immutability:
 
-# Start the Vite development server
-npm run dev
-```
-*(Runs on `http://localhost:5173`)*
+- **`Users`**: Operational personnel, tracking `role`, `station`, and `status`.
+- **`Items`**: Core cold-chain inventory tracking quantities, units, and critical thresholds.
+- **`Requisitions`**: Internal base-to-base supply requests.
+- **`Manifests`**: High-level cargo shipment ledgers for global transit.
 
----
+### Primary Express Routes (`backend/server.js`)
+- `GET /api/v1/research-centers` : Hydrates the main F.R.O.S.T admin overview grid.
+- `GET /api/v1/research-centers/:id` : Deep-fetches station-specific analytics and calculates localized inventory metrics.
+- `GET /api/stations/:stationName/roster` : Performs regex aggregations on the `Users` collection to stream live personnel deployments.
 
-## ✨ Key Features & Capabilities
+## 🤝 Contributing Guidelines
 
-- **Cold-Chain Inventory Tracking:** Real-time visibility into mission-critical items across polar stations.
-- **Offline-First Synchronization:** Yjs CRDT integration allows commanders to make inventory changes while disconnected; mutations safely sync back to the master MongoDB ledger upon reconnection.
-- **Automated ML Forecasting:** The Python XGBoost microservice analyzes station weather data (Wind Speed, Pressure Drops) to predict safe transport windows and dynamic stock thresholds.
-- **Role-Based Access Control (RBAC):** Distinct interfaces for **Admin** (Global Oversight) and **Commander** (Station-level operations).
-- **Secure Requisitions:** End-to-end supply request lifecycle (Draft ➔ Approved ➔ In-Transit ➔ Delivered) with SHA-256 manifest hashing.
+We welcome pull requests from the community to help stabilize polar logistics!
 
----
-
-## 📡 API & Service Endpoints Overview
-
-### Node.js Backend (`http://localhost:5000`)
-| Route | Method | Description |
-|---|---|---|
-| `/api/auth/login` | `POST` | Authenticate user & issue JWT |
-| `/api/inventory` | `GET` | Fetch all baseline logistics items |
-| `/api/requisitions` | `POST` | Create a new supply requisition |
-| `/api/requisitions/:id` | `PUT` | Update requisition status |
-| `/api/manifest/seal` | `POST` | Generate SHA-256 seal for manifest |
-| `/api/v1/sync/crdt` | `WS/POST` | Yjs CRDT synchronization layer |
-
-### ML Microservice (`http://localhost:8000`)
-| Route | Method | Description |
-|---|---|---|
-| `/health` | `GET` | Check ML engine status |
-| `/predict-window` | `GET` | Query transport safety probabilities using environmental inputs |
-
----
-
-## 🆘 Troubleshooting & FAQ
-
-**1. MongoDB Connection Timeout / Auth Errors**
-- Ensure your IP address is whitelisted in MongoDB Atlas (`0.0.0.0/0` for universal access during hackathons).
-- Double-check the `MONGO_URI` password (remove the `< >` brackets).
-
-**2. Virtual Environment Execution Policy (Windows)**
-- If PowerShell blocks the activation of the `.venv`:
-  ```powershell
-  Set-ExecutionPolicy Bypass -Scope Process
-  ```
-
-**3. Port Conflicts (`EADDRINUSE`)**
-- If ports `5000`, `8000`, or `5173` are occupied, kill the blocking processes or modify the ports in `.env` and `vite.config.js` respectively.
-
-**4. ML Model Not Found**
-- If the Python API returns a "Model not loaded" error, run `python train_model.py` inside `ml_service/` to generate the `xgboost_model.joblib` binary.
+1. **Fork the Repository**
+2. **Create a Feature Branch:** `git checkout -b feature/tactical-radar-update`
+3. **Commit your Changes:** `git commit -m 'Add new radar ping animation'`
+4. **Push to the Branch:** `git push origin feature/tactical-radar-update`
+5. **Open a Pull Request** ensuring your code adheres to existing Tailwind styles and doesn't break Yjs synchronization flows.

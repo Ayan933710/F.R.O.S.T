@@ -18,68 +18,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const geoUrl = 'https://unpkg.com/world-atlas@2.0.2/countries-110m.json';
 
-const shipments = [
- {
-  vessel: 'MV Polar Endeavour',
-  cargo: 'Scientific Equipment',
-  destination: 'Bharati Station',
-  eta: '2026-10-03',
-  status: 'In Transit',
-  start: [-40, -30],
-  current: [-40, -50],
-  end: [11.8, -70.7],
-  heading: '184° S',
-  speed: '14.2 knots',
-  manifest: ['12x Medical Kits', '4x Generator Parts', '2000L Arctic Fuel'],
- },
- {
-  vessel: 'RSS Nansen',
-  cargo: 'Fuel & Provisions',
-  destination: 'Maitri Station',
-  eta: '2026-10-01',
-  status: 'Docked',
-  start: [18.4, -33.9],
-  current: [11.8, -70.7],
-  end: [11.8, -70.7],
-  heading: '000° Docked',
-  speed: '0.0 knots',
-  manifest: ['5000L Polar Diesel', '40x Cold Rations', '8x VHF Radios'],
- },
- {
-  vessel: 'ICE-9 Freighter',
-  cargo: 'Medical Supplies',
-  destination: 'Himadri Station',
-  eta: '2026-10-08',
-  status: 'Delayed',
-  start: [10.0, 54.0],
-  current: [11.9, 78.9],
-  end: [11.9, 78.9],
-  heading: '012° NNE',
-  speed: '3.1 knots (Gale Stall)',
-  manifest: [
-   '60x Emergency Trauma Packs',
-   '10x Blood Plasma Boxes',
-   '2x Defibrillator Units',
-  ],
- },
- {
-  vessel: 'MV Arctic Fox',
-  cargo: 'Construction Materials',
-  destination: 'Bharati Station',
-  eta: '2026-10-12',
-  status: 'In Transit',
-  start: [72.8, 19.0],
-  current: [76, -45],
-  end: [76.1, -69.4],
-  heading: '172° S',
-  speed: '16.8 knots',
-  manifest: [
-   '120x Structural Steel Girders',
-   '15x Insulated Hab Panels',
-   '500kg Fasteners',
-  ],
- },
-];
+const shipments = [];
 
 const statusStyles = {
  'In Transit': 'text-[var(--accent-primary)] border-[var(--accent-primary)] bg-[var(--accent-primary)]/10',
@@ -338,6 +277,13 @@ export default function GlobalCargoTracker() {
       </tr>
      </thead>
      <tbody>
+      {activeShipments.length === 0 && (
+       <tr>
+        <td colSpan="5" className="py-8 text-center text-sm text-[var(--text-secondary)] italic">
+         Zero active shipments found.
+        </td>
+       </tr>
+      )}
       {activeShipments.map((s, i) => {
        const isSelected = selectedVessel?.vessel === s.vessel;
        return (

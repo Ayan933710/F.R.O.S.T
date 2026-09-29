@@ -56,9 +56,9 @@ export default function CommanderLayout() {
   <div className="dashboard-shell h-screen w-full bg-[var(--bg-primary)] flex flex-col relative overflow-hidden">
    <NavigationBar />
 
-   <div className="flex flex-1 min-h-0 overflow-hidden">
-    {/* Left Sidebar */}
-    <aside className="w-64 bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border-r border-[var(--border)] flex flex-col p-4 gap-2 overflow-y-auto shrink-0">
+   <div className="flex flex-1 min-h-0 overflow-hidden flex-col md:flex-row">
+    {/* Desktop Left Sidebar */}
+    <aside className="hidden md:flex w-64 bg-[var(--bg-panel)] backdrop-blur-xl shadow-[var(--shadow-glass)] border-r border-[var(--border)] flex-col p-4 gap-2 overflow-y-auto shrink-0 z-10">
      <h3 className="text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-widest px-4 mb-2">
       Commander Modules
      </h3>
@@ -87,7 +87,7 @@ export default function CommanderLayout() {
     </aside>
 
     {/* Dynamic Main Content */}
-    <main className="flex-1 p-3 lg:p-4 overflow-y-auto bg-[var(--bg-primary)] min-w-0 flex flex-col">
+    <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto bg-[var(--bg-primary)] min-w-0 flex flex-col pb-24 md:pb-6">
      <Routes>
       <Route index element={<LiveTelemetryRadar />} />
       <Route path="telemetry" element={<Navigate to="/commander" replace />} />
@@ -98,6 +98,25 @@ export default function CommanderLayout() {
       <Route path="history" element={<CommanderHistory />} />
      </Routes>
     </main>
+
+    {/* Mobile Bottom Navigation */}
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-panel-raised)] backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.2)] border-t border-[var(--border)] flex items-center justify-around p-2 z-[100] pb-safe">
+      {sidebarLinks.map((link) => (
+       <NavLink
+        key={link.to}
+        to={link.to}
+        end={link.end}
+        className={({ isActive }) =>
+         `flex flex-col items-center justify-center gap-1 p-2 flex-1 rounded-lg transition-all min-h-[48px] ${
+          isActive ? 'text-[var(--accent-primary)] font-semibold' : 'text-[var(--text-secondary)]'
+         }`
+        }
+       >
+        <link.icon size={20} className={link.isActive ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]' : ''} />
+        <span className="text-[9px] uppercase tracking-wider">{link.label.split(' ')[0]}</span>
+       </NavLink>
+      ))}
+    </nav>
    </div>
 
    {/* Emergency Action System Overlay */}

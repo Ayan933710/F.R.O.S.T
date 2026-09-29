@@ -31,11 +31,7 @@ import {
 import { useIceNet } from '../../context/IceNetContext';
 import InventoryDemandPanel from './InventoryDemandPanel';
 
-const defaultFlights = [
- { id: 'CHF-301', route: 'Cape Town → Maitri', date: '2026-10-05', duration: 8, offset: 0, status: 'Confirmed', window: 'Oct 1 - Oct 8' },
- { id: 'CHF-302', route: 'Christchurch → Bharati', date: '2026-10-12', duration: 12, offset: 3, status: 'Pending', window: 'Oct 4 - Oct 16' },
- { id: 'CHF-303', route: 'Tromsø → Himadri', date: '2026-10-18', duration: 5, offset: 6, status: 'Confirmed', window: 'Oct 7 - Oct 12' },
-];
+const defaultFlights = [];
 
 const getFlightStatusColor = (status) => {
  if (status === 'Confirmed') return 'var(--ok)';
@@ -44,24 +40,9 @@ const getFlightStatusColor = (status) => {
  return 'var(--accent-primary)';
 };
 
-const initialSummerTeam = [
- { id: 's1', name: 'Dr. Elena Vasquez', role: 'Lead Glaciologist' },
- { id: 's2', name: 'Eng. Kofi Mensah', role: 'Power Systems' },
- { id: 's3', name: 'Dr. Aanya Sharma', role: 'Marine Biologist' },
- { id: 's4', name: 'Tech. Liam Chen', role: 'Comms Specialist' },
-];
-
-const initialWinterTeam = [
- { id: 'w1', name: 'Sgt. Nora Lindqvist', role: 'Field Medic & Ops Lead' },
- { id: 'w2', name: 'Dr. Raj Patel', role: 'Atmospheric Physicist' },
- { id: 'w3', name: 'Eng. Yuki Tanaka', role: 'Mechanical Engineer' },
-];
-
-const defaultBudgetData = [
- { name: 'Charter Flights', value: 4.2, color: '#3B82F6' },
- { name: 'Cold Logistics', value: 1.8, color: '#F43F5E' },
- { name: 'Reserve', value: 2.1, color: '#4ade80' },
-];
+const initialSummerTeam = [];
+const initialWinterTeam = [];
+const defaultBudgetData = [];
 
 const CustomPieTooltip = ({ active, payload, total }) => {
  if (active && payload && payload.length) {
