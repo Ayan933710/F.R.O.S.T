@@ -15,8 +15,6 @@
 ---
 
 **F.R.O.S.T** (Field Research & Operational Supply Tracker) is a mission-critical logistics platform built to sustain extreme-environment polar research stations. From predicting localized cold-chain supply exhaustion to orchestrating high-stakes global manifests, F.R.O.S.T provides commanders with a real-time, zero-latency situational awareness dashboard. Designed with a stunning cyber-tactical aesthetic, the platform bridges cutting-edge telemetry tracking with robust inventory ledgers to ensure no researcher is left stranded.
-<<<<<<< HEAD
-
 ## 🗺️ System Workflow & User Journey
 
 F.R.O.S.T is engineered for two primary operational profiles, ensuring streamlined communication between headquarters and the deep freeze:
@@ -37,44 +35,14 @@ F.R.O.S.T is engineered for two primary operational profiles, ensuring streamlin
 - **Role-Based Tactical Dashboards:** Distinct UX/UI flows for Global Admins and Station Commanders, maximizing cognitive focus.
 - **Active Personnel Rostering:** Live tracking of deployed scientists and crew complements assigned to each polar station.
 - **Predictive Consumption Baselines:** Powered by our dedicated Python ML service to forecast supply exhaustion before it becomes critical.
+- **Offline-First Resilience:** Field commanders can manage inventory even when satellite links fail. The local dashboard queues movements and gracefully synchronizes with the AWS cloud ledger the moment connectivity is restored.
 
 ### Technical Engineering
-- **Yjs CRDT Real-Time Synchronization:** Conflict-free, real-time localized state synchronization across the logistics network, ensuring data integrity even during intermittent satellite connections.
+- **Strict Background Synchronization:** The React frontend automatically intercepts stale local storage and cross-references it with the master database on load, ensuring ghost items are eradicated and all field laptops stay perfectly aligned.
+- **Event-Sourced Inventory Ledger:** The backend utilizes an immutable `InventoryMovement` log to dynamically calculate aggregate stock levels and predictive burn rates, bypassing static legacy data for 100% live analytics.
 - **MongoDB Aggregation Pipelines:** Highly optimized database queries that dynamically calculate cross-station metrics and active rosters.
 - **Responsive Mobile-First Tailwind UI:** Fluid, cyber-tactical interface that degrades gracefully into app-like bottom navigation bars for mobile fieldwork.
 - **Open-Meteo External API Integrations:** Live meteorological telemetry streaming surface temperature, wind speed, relative humidity, and pressure directly into the operational cards.
-
-
-
-## 🗺️ System Workflow & User Journey
-
-F.R.O.S.T is engineered for two primary operational profiles, ensuring streamlined communication between headquarters and the deep freeze:
-
-- **Global Admin (HQ):** Operates from the macro-level. The Admin dashboard provides a bird's-eye view of all polar assets (Maitri, Bharati, Himadri). HQ oversees global cargo transits, approves life-saving expeditions, manages system-wide inventory allocations, and monitors the overall health of the logistics network.
-- **Station Commander (Field):** A hyper-localized, tactical view designed for extreme environments. Commanders monitor live sensor telemetry, track real-time local weather API feeds, manage active station rosters, and submit localized supply requisitions before critical items hit zero.
-
-### The Logistics Lifecycle
-1. **Requisition Created:** A Station Commander identifies a critical shortfall (e.g., thermal generators) and issues a requisition.
-2. **Manifest Generated:** HQ approves the requisition, packing the items into a global transit manifest.
-3. **Deployed:** The cargo enters transit, tracked globally via the F.R.O.S.T ledger.
-4. **Inventory Updated:** Upon arrival, the cargo is scanned into the local station's cold-chain inventory via CRDT-synced state updates.
-
-## ⚡ Comprehensive Feature Matrix
-
-### Operational Capabilities
-- **Cold-Chain Inventory Tracking:** Precision monitoring of perishable and high-value equipment with automatic low-stock warnings.
-- **Role-Based Tactical Dashboards:** Distinct UX/UI flows for Global Admins and Station Commanders, maximizing cognitive focus.
-- **Active Personnel Rostering:** Live tracking of deployed scientists and crew complements assigned to each polar station.
-- **Predictive Consumption Baselines:** Powered by our dedicated Python ML service to forecast supply exhaustion before it becomes critical.
-
-### Technical Engineering
-- **Yjs CRDT Real-Time Synchronization:** Conflict-free, real-time localized state synchronization across the logistics network, ensuring data integrity even during intermittent satellite connections.
-- **MongoDB Aggregation Pipelines:** Highly optimized database queries that dynamically calculate cross-station metrics and active rosters.
-- **Responsive Mobile-First Tailwind UI:** Fluid, cyber-tactical interface that degrades gracefully into app-like bottom navigation bars for mobile fieldwork.
-- **Open-Meteo External API Integrations:** Live meteorological telemetry streaming surface temperature, wind speed, relative humidity, and pressure directly into the operational cards.
-
-
->>>>>>> 9db55d9782cc333a9707e5b2d92bc0bb63360af9
 
 ## 📂 Project Structure
 
