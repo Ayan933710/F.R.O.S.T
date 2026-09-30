@@ -180,16 +180,16 @@ export default function CommanderInventory() {
   }, [items, station]);
 
   useEffect(() => {
-    if (items.length === 0 || (items.length > 0 && !items[0].name)) {
-      fetch(`${API_V1}/inventory`)
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data) && data.length > 0) {
-            setItems(data);
-          }
-        })
-        .catch(console.error);
-    }
+    // Always sync with the master database when online to ensure laptops stay in sync
+    fetch(`${API_V1}/inventory`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          // If the server has data (even an empty array), trust the server state
+          setItems(data);
+        }
+      })
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
