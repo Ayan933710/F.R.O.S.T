@@ -936,9 +936,9 @@ const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
 app.use(express.static(frontendDist));
 
 // SPA catch-all: any non-API GET request serves index.html
-app.get('*', (req, res, next) => {
+app.use((req, res, next) => {
   // Skip API routes, WebSocket paths, and health check
-  if (req.path.startsWith('/api/') || req.path === '/crdt' || req.path === '/telemetry') {
+  if (req.method !== 'GET' || req.path.startsWith('/api/') || req.path === '/crdt' || req.path === '/telemetry') {
     return next();
   }
   res.sendFile(path.join(frontendDist, 'index.html'), (err) => {
