@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-import { API_BASE } from '../../utils/api';
-
   Activity,
   ArrowLeft,
   CloudRain,
@@ -13,8 +11,9 @@ import { API_BASE } from '../../utils/api';
   Wind,
   Zap,
 } from 'lucide-react';
+import { API_BASE } from '../../utils/api';
 
-const API_BASE = API_BASE + '/api/v1';
+const API_V1 = API_BASE + '/api/v1';
 
 function StationCard({ station, isSelected, onSelect }) {
   const [liveTemp, setLiveTemp] = useState(null);
@@ -92,9 +91,9 @@ function StationCard({ station, isSelected, onSelect }) {
           <div className="flex flex-col items-end justify-center">
             <div className="text-slate-100 font-bold text-sm font-mono">
               {liveTemp === null ? (
-                <span className="animate-pulse text-slate-500">--.-°C</span>
+                <span className="animate-pulse text-slate-500">--.-Â°C</span>
               ) : (
-                `${displayTemp.toFixed(1)}°C`
+                `${displayTemp.toFixed(1)}Â°C`
               )}
             </div>
             <span className="text-slate-500 text-[9px] uppercase tracking-widest mt-0.5">Live Open-Meteo</span>
@@ -160,7 +159,7 @@ function DetailPanel({ station, onBack }) {
     const loadRoster = async () => {
       try {
         const stationName = station.name.split(' ')[0];
-        const res = await fetch(`${API_BASE}/api/stations/${stationName}/roster`);
+        const res = await fetch(`${API_V1}/api/stations/${stationName}/roster`);
         const data = await res.json();
         if (active && data.success) {
           setLiveRoster(data.roster);
@@ -243,7 +242,7 @@ function DetailPanel({ station, onBack }) {
               <div className="flex items-center justify-between">
                 <span className="text-[var(--text-secondary)] text-xs">Temp</span>
                 <span className="text-[var(--text-primary)] text-sm font-medium font-mono">
-                  {liveWeather ? `${liveWeather.temperature_2m.toFixed(1)}°C` : '--.-°C'}
+                  {liveWeather ? `${liveWeather.temperature_2m.toFixed(1)}Â°C` : '--.-Â°C'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -315,7 +314,7 @@ export default function ResearchCenters() {
   useEffect(() => {
     const loadCenters = async () => {
       try {
-        const res = await fetch(`${API_BASE}/research-centers`);
+        const res = await fetch(`${API_V1}/research-centers`);
         const data = await res.json();
         setStations(data);
       } catch (error) {
@@ -337,7 +336,7 @@ export default function ResearchCenters() {
       </h2>
 
       {loading ? (
-        <div className="text-[var(--text-secondary)] text-sm">Loading centers…</div>
+        <div className="text-[var(--text-secondary)] text-sm">Loading centersâ€¦</div>
       ) : (
         <AnimatePresence mode="wait">
           {selectedStation ? (

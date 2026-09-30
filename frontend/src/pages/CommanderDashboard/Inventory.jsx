@@ -6,7 +6,7 @@ import { API_BASE } from '../../utils/api';
 
 const mockData = [];
 
-const API_BASE = API_BASE + '/api/v1';
+const API_V1 = API_BASE + '/api/v1';
 const MOVEMENT_QUEUE_KEY = 'icenet.inventoryMovementQueue';
 let movementSyncPromise = null;
 
@@ -27,7 +27,7 @@ function flushMovementQueue() {
       if (!movement) break;
 
       try {
-        const response = await fetch(`${API_BASE}/inventory/movements`, {
+        const response = await fetch(`/inventory/movements`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(movement),
@@ -195,7 +195,7 @@ export default function CommanderInventory() {
     let active = true;
     const loadRunway = async () => {
       try {
-        const response = await fetch(`${API_BASE}/inventory/forecast?station=${encodeURIComponent(station)}`);
+        const response = await fetch(`/inventory/forecast?station=${encodeURIComponent(station)}`);
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Could not load stock outlook');
         if (active) {
@@ -274,7 +274,7 @@ export default function CommanderInventory() {
     let active = true;
     const loadRequisitions = async () => {
       try {
-        const response = await fetch(`${API_BASE}/requisitions?station=${encodeURIComponent(station)}`);
+        const response = await fetch(`/requisitions?station=${encodeURIComponent(station)}`);
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Could not load requisitions');
         if (active) {
@@ -327,7 +327,7 @@ export default function CommanderInventory() {
     const unit = matched ? matched.unit : (reqAsset === 'OTHER' ? 'Units' : '');
     
     try {
-      const response = await fetch(`${API_BASE}/requisitions`, {
+      const response = await fetch(`/requisitions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ station, item: finalAsset, quantity: Number(reqQty), unit, urgency: reqUrgency }),

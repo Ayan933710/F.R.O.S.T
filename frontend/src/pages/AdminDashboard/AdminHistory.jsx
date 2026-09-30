@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-import { API_BASE } from '../../utils/api';
-
- Search,
+  Search,
  Download,
  ShieldCheck,
  Box,
@@ -18,6 +16,7 @@ import { API_BASE } from '../../utils/api';
  Shield,
  FileText,
 } from 'lucide-react';
+import { API_BASE } from '../../utils/api';
 
 const initialLogs = [];
 
@@ -99,7 +98,7 @@ export default function AdminHistory() {
    <div className="flex items-center justify-between mb-6 shrink-0">
     <div>
      <h2 className="text-[var(--accent-primary)] font-['Space_Grotesk'] font-bold text-2xl tracking-wide">
-      HISTORY · CRYPTOGRAPHIC AUDIT LEDGER
+      HISTORY Â· CRYPTOGRAPHIC AUDIT LEDGER
      </h2>
     </div>
 
