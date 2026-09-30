@@ -14,7 +14,7 @@
 
 ---
 
-**F.R.O.S.T** (Field Research & Operational Supply Tracker) is a mission-critical logistics platform built to sustain extreme-environment polar research stations. From predicting localized cold-chain supply exhaustion to orchestrating high-stakes global manifests, F.R.O.S.T provides commanders with a real-time, zero-latency situational awareness dashboard. Designed with a stunning cyber-tactical aesthetic, the platform bridges cutting-edge telemetry tracking with robust inventory ledgers to ensure no researcher is left stranded.
+**F.R.O.S.T** (Federated Routing & Operational Supply Tracking) is a mission-critical logistics platform built to sustain extreme-environment polar research stations. From predicting localized cold-chain supply exhaustion to orchestrating high-stakes global manifests, F.R.O.S.T provides commanders with a real-time, zero-latency situational awareness dashboard. Designed with a stunning cyber-tactical aesthetic, the platform bridges cutting-edge telemetry tracking with robust inventory ledgers to ensure no researcher is left stranded.
 ## 🗺️ System Workflow & User Journey
 
 F.R.O.S.T is engineered for two primary operational profiles, ensuring streamlined communication between headquarters and the deep freeze:
