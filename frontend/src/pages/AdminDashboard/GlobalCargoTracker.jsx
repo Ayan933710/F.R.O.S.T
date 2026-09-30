@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { ComposableMap, Geographies, Geography, Graticule, Marker, Line } from 'react-simple-maps';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE } from '../../utils/api';
+
 
 const geoUrl = 'https://unpkg.com/world-atlas@2.0.2/countries-110m.json';
 
@@ -39,7 +41,7 @@ export default function GlobalCargoTracker() {
  const [activeShipments, setActiveShipments] = useState(shipments);
 
  useEffect(() => {
-  fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/cargo/manifests')
+  fetch(API_BASE + '/api/v1/cargo/manifests')
    .then(res => res.json())
    .then(data => {
     if (data && data.length > 0) {

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wifi, Search, Plus, Minus, AlertCircle, Send, X, Clock, CloudOff, RefreshCw, CheckCircle, XCircle, Trash2, AlertTriangle } from 'lucide-react';
+import { API_BASE } from '../../utils/api';
+
 
 const mockData = [];
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1';
+const API_BASE = API_BASE + '/api/v1';
 const MOVEMENT_QUEUE_KEY = 'icenet.inventoryMovementQueue';
 let movementSyncPromise = null;
 

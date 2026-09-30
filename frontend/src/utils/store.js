@@ -1,4 +1,6 @@
 import * as Y from 'yjs';
+import { API_BASE, wsUrl } from './api';
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // §3.2  CRDT Sync Engine — Edge / Client Side
@@ -136,7 +138,7 @@ doc.on('update', () => {
 /**
  * Call once from the root component. Returns a teardown function.
  *
- * @param {string} wsUrl  e.g. (import.meta.env.VITE_WS_URL || 'ws://localhost:5000') + '/crdt'
+ * @param {string} wsUrl  e.g. wsUrl('/crdt')
  */
 export function setupSync(wsUrl) {
   let ws = null;
@@ -251,7 +253,7 @@ export function setupSync(wsUrl) {
           ws.send(JSON.stringify({ type: 'update', update: arr }));
         } else {
           // WS dropped mid-flush; fall back to HTTP
-          await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/sync/crdt', {
+          await fetch(API_BASE + '/api/v1/sync/crdt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

@@ -14,6 +14,8 @@ import {
  Zap,
 } from 'lucide-react';
 import { useIceNet } from '../../context/IceNetContext';
+import { API_BASE } from '../../utils/api';
+
 
 export default function ArrivalCargoScanner() {
  const { sealedManifestHash } = useIceNet();
@@ -30,7 +32,7 @@ export default function ArrivalCargoScanner() {
  useEffect(() => {
   const fetchManifest = async () => {
    try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/v1/cargo/manifests`);
+    const res = await fetch(`${API_BASE}/api/v1/cargo/manifests`);
     if (res.ok) {
      const data = await res.json();
      // Filter manifests intended for this station
@@ -87,7 +89,7 @@ export default function ArrivalCargoScanner() {
       })));
     }
     
-    const verifyRes = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/cargo/verify-hash', {
+    const verifyRes = await fetch(API_BASE + '/api/v1/cargo/verify-hash', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ manifest_id: matchedManifest.manifest_id, scanned_hash: value })
@@ -96,7 +98,7 @@ export default function ArrivalCargoScanner() {
     const verifyData = await verifyRes.json();
     if (verifyRes.ok && verifyData.matches) {
       setVerifyResult('match');
-      await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:5000')}/api/v1/cargo/manifest/${matchedManifest.manifest_id}/status`, {
+      await fetch(`${API_BASE}/api/v1/cargo/manifest/${matchedManifest.manifest_id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'Delivered (Base)' })

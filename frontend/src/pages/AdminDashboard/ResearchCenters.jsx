@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+import { API_BASE } from '../../utils/api';
+
   Activity,
   ArrowLeft,
   CloudRain,
@@ -12,7 +14,7 @@ import {
   Zap,
 } from 'lucide-react';
 
-const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1';
+const API_BASE = API_BASE + '/api/v1';
 
 function StationCard({ station, isSelected, onSelect }) {
   const [liveTemp, setLiveTemp] = useState(null);
@@ -158,7 +160,7 @@ function DetailPanel({ station, onBack }) {
     const loadRoster = async () => {
       try {
         const stationName = station.name.split(' ')[0];
-        const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:5000')}/api/stations/${stationName}/roster`);
+        const res = await fetch(`${API_BASE}/api/stations/${stationName}/roster`);
         const data = await res.json();
         if (active && data.success) {
           setLiveRoster(data.roster);

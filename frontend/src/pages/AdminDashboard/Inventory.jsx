@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Database, CheckCircle, Clock, Search, X, Satellite, MapPin, Activity } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { API_BASE } from '../../utils/api';
+
 
 export default function AdminInventory() {
   const [activeCenter, setActiveCenter] = useState('Himadri');
@@ -19,9 +21,9 @@ export default function AdminInventory() {
       setInventoryLoading(true);
       try {
         const [forecastResponse, requisitionResponse, insightsResponse] = await Promise.all([
-          fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:5000')}/api/v1/inventory/forecast?station=${activeCenter.toLowerCase()}`),
-          fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:5000')}/api/v1/requisitions?station=${activeCenter.toLowerCase()}`),
-          fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:5000')}/api/v1/ml/insights?station=${activeCenter.toLowerCase()}`)
+          fetch(`${API_BASE}/api/v1/inventory/forecast?station=${activeCenter.toLowerCase()}`),
+          fetch(`${API_BASE}/api/v1/requisitions?station=${activeCenter.toLowerCase()}`),
+          fetch(`${API_BASE}/api/v1/ml/insights?station=${activeCenter.toLowerCase()}`)
         ]);
         const [forecast, requisitions, insights] = await Promise.all([forecastResponse.json(), requisitionResponse.json(), insightsResponse.json()]);
         
@@ -90,7 +92,7 @@ export default function AdminInventory() {
   const handleDecision = async (id, decision) => {
     setRequestError('');
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:5000')}/api/v1/requisitions/${encodeURIComponent(id)}`, {
+      const response = await fetch(`${API_BASE}/api/v1/requisitions/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision }),

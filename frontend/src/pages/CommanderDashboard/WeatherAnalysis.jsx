@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Thermometer, Eye, Wind } from 'lucide-react';
+import { API_BASE } from '../../utils/api';
+
 
 export default function WeatherAnalysis() {
  const [weather, setWeather] = useState(null);
@@ -12,7 +14,7 @@ export default function WeatherAnalysis() {
   const controller = new AbortController();
   const loadWeather = async () => {
    try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:5000')}/api/v1/aws/current?station=${station}`, { signal: controller.signal });
+    const response = await fetch(`${API_BASE}/api/v1/aws/current?station=${station}`, { signal: controller.signal });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Live weather unavailable');
     if (active) {

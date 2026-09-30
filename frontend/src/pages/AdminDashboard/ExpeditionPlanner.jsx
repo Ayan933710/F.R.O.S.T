@@ -30,6 +30,8 @@ import {
 } from 'lucide-react';
 import { useIceNet } from '../../context/IceNetContext';
 import InventoryDemandPanel from './InventoryDemandPanel';
+import { API_BASE } from '../../utils/api';
+
 
 const defaultFlights = [];
 
@@ -72,7 +74,7 @@ export default function ExpeditionPlanner() {
 
  useEffect(() => {
   let cancelled = false;
-    fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/expeditions/ISEA-46')
+    fetch(API_BASE + '/api/v1/expeditions/ISEA-46')
      .then(response => {
        if (!response.ok) throw new Error(`Could not load expedition plan (${response.status})`);
     return response.json();
@@ -89,7 +91,7 @@ export default function ExpeditionPlanner() {
    });
 
    // Fetch actual sealed manifests from DB to override the hardcoded placeholder
-   fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/cargo/manifests')
+   fetch(API_BASE + '/api/v1/cargo/manifests')
      .then(res => res.json())
      .then(data => {
        if (cancelled || !Array.isArray(data)) return;
@@ -115,7 +117,7 @@ export default function ExpeditionPlanner() {
   setIsPlannerSaving(true);
   setPlannerNotice('');
   try {
-   const response = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/expeditions/ISEA-46', {
+   const response = await fetch(API_BASE + '/api/v1/expeditions/ISEA-46', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(fields),
@@ -265,11 +267,11 @@ export default function ExpeditionPlanner() {
   setPredictionResult(null);
   setPredictionError('');
   try {
-   const weatherResponse = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:5000')}/api/v1/aws/current?station=${weatherStation}`);
+   const weatherResponse = await fetch(`${API_BASE}/api/v1/aws/current?station=${weatherStation}`);
    const weather = await weatherResponse.json();
    if (!weatherResponse.ok) throw new Error(weather.error || 'Live weather unavailable');
 
-   const predictionUrl = new URL((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/ml/predict-window');
+   const predictionUrl = new URL(API_BASE + '/api/v1/ml/predict-window');
    Object.entries({
     U10: weather.U10,
     pressure_drop: weather.pressure_drop,
@@ -329,13 +331,13 @@ export default function ExpeditionPlanner() {
     vessel_mmsi: '123456789'
    };
    
-   await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/cargo/manifest', {
+   await fetch(API_BASE + '/api/v1/cargo/manifest', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
    });
    
-   const sealRes = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:5000')}/api/v1/cargo/manifest/${manifest_id}/seal`, {
+   const sealRes = await fetch(`${API_BASE}/api/v1/cargo/manifest/${manifest_id}/seal`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' }
    });

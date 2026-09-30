@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Activity, ChevronDown, RefreshCw } from 'lucide-react';
+import { API_BASE } from '../../utils/api';
 
-const FORECAST_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/inventory/forecast';
+
+const FORECAST_URL = API_BASE + '/api/v1/inventory/forecast';
 
 const statusLabels = {
   reorder_now: 'Below reorder line',

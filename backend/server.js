@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
 const axios = require('axios');
+const path = require('path');
 const http = require('http');
 const WebSocket = require('ws');
 const Y = require('yjs');
@@ -28,7 +29,12 @@ mongoose.connect(process.env.MONGO_URI || process.env.DATABASE_URL)
   .catch(err => console.error('MongoDB connection error:', err));
 
 const app = express();
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(cors({
+  origin: process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(s => s.trim())
+    : true,               // true = reflect request origin (allow any)
+  credentials: true,
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use('/api/v1/sync/crdt-binary', express.raw({ type: 'application/octet-stream', limit: '10mb' }));
 
@@ -922,6 +928,25 @@ app.get('/api/v1/inventory/forecast', async (req, res) => {
   });
 
   res.json({ method: 'stock-threshold-and-consumption-baseline', trained_model: false, items });
+});
+// ─────────────────────────────────────────────────────────────────────────────
+// §PRODUCTION  Serve frontend build (single-process deployment on AWS)
+// ─────────────────────────────────────────────────────────────────────────────
+const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
+app.use(express.static(frontendDist));
+
+// SPA catch-all: any non-API GET request serves index.html
+app.get('*', (req, res, next) => {
+  // Skip API routes, WebSocket paths, and health check
+  if (req.path.startsWith('/api/') || req.path === '/crdt' || req.path === '/telemetry') {
+    return next();
+  }
+  res.sendFile(path.join(frontendDist, 'index.html'), (err) => {
+    if (err) {
+      // If dist doesn't exist yet, let it 404 gracefully
+      res.status(404).json({ error: 'Frontend build not found. Run `npm run build` in frontend/' });
+    }
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

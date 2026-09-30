@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { HeartPulse, User, ShieldCheck, Edit2, Plus, X, Upload, Trash2, AlertTriangle } from 'lucide-react';
+import { API_BASE } from '../../utils/api';
+
 
 const initialScientists = [];
 
@@ -364,7 +366,7 @@ export default function ScientistsRoster() {
  useEffect(() => {
   const fetchRoster = async () => {
    try {
-    const res = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/roster');
+    const res = await fetch(API_BASE + '/api/v1/roster');
     if (res.ok) {
      const data = await res.json();
      setRoster(data);
@@ -386,7 +388,7 @@ export default function ScientistsRoster() {
 
   try {
    if (editingPerson) {
-    const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:5000')}/api/v1/roster/${editingPerson.personnel_id}`, {
+    const res = await fetch(`${API_BASE}/api/v1/roster/${editingPerson.personnel_id}`, {
      method: 'PATCH',
      headers: { 'Content-Type': 'application/json' },
      body: JSON.stringify(payload)
@@ -396,7 +398,7 @@ export default function ScientistsRoster() {
      setRoster(prev => prev.map(p => p.personnel_id === updated.personnel.personnel_id ? updated.personnel : p));
     }
    } else {
-    const res = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api/v1/roster', {
+    const res = await fetch(API_BASE + '/api/v1/roster', {
      method: 'POST',
      headers: { 'Content-Type': 'application/json' },
      body: JSON.stringify(payload)
@@ -423,7 +425,7 @@ export default function ScientistsRoster() {
  const handleConfirmDelete = async () => {
   if (personToDelete) {
    try {
-    const res = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.VITE_API_URL || 'http://localhost:5000')}/api/v1/roster/${personToDelete.personnel_id}`, {
+    const res = await fetch(`${API_BASE}/api/v1/roster/${personToDelete.personnel_id}`, {
      method: 'DELETE'
     });
     if (res.ok) {

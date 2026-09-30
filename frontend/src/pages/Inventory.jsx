@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { AlertTriangle, Database, Plus, Minus, Wifi, WifiOff, RefreshCw, Clock } from 'lucide-react';
 import { doc, inventoryMap, syncStatus, setupSync } from '../utils/store';
 import * as Y from 'yjs';
+import { wsUrl } from '../utils/api';
+
 
 export default function Inventory() {
  const [items, setItems] = useState([]);
@@ -11,7 +13,7 @@ export default function Inventory() {
 
  useEffect(() => {
   // Connect CRDT sync
-  syncRef.current = setupSync((import.meta.env.VITE_WS_URL || 'ws://localhost:5000') + '/crdt');
+  syncRef.current = setupSync(wsUrl('/crdt'));
 
   // Track connection state changes
   const onStatus = (e) => setConnected(e.detail.connected);
