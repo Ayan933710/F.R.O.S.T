@@ -180,6 +180,19 @@ export default function CommanderInventory() {
   }, [items, station]);
 
   useEffect(() => {
+    if (items.length === 0) {
+      fetch(`${API_V1}/inventory`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            setItems(data);
+          }
+        })
+        .catch(console.error);
+    }
+  }, []);
+
+  useEffect(() => {
     const snapshotKey = `icenet.inventorySnapshot.${station}.${new Date().toISOString().slice(0, 10)}`;
     if (!localStorage.getItem(snapshotKey)) {
       localStorage.setItem(snapshotKey, 'recorded');
