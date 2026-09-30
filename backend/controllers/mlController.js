@@ -1,5 +1,5 @@
 const axios = require('axios');
-const Item = require('../models/Item');
+const InventoryMovement = require('../models/InventoryMovement');
 const Requisition = require('../models/Requisition');
 
 const ML_URL = process.env.ML_URL || 'http://localhost:8000';
@@ -9,9 +9,15 @@ async function getPredictiveInsights(req, res) {
     const station = req.query.station || 'Himadri';
     
     // 1. Fetch latest DB state
-    const items = await Item.find({ 
+    const movements = await InventoryMovement.find({ 
       station: new RegExp('^' + station + '$', 'i')
-    });
+    }).sort({ recorded_at: 1 });
+    
+    const latestStocks = new Map();
+    for (const m of movements) {
+      latestStocks.set(m.item_id, m.stock_after);
+    }
+    
     const requisitions = await Requisition.find({ 
       station: new RegExp('^' + station + '$', 'i'), 
       status: 'PENDING_APPROVAL' 
@@ -19,7 +25,10 @@ async function getPredictiveInsights(req, res) {
     
     // 2. Generate 14-day Projected Burn Rate (Mocked baseline based on inventory)
     const burnRateData = [];
-    let totalStock = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    let totalStock = 0;
+    for (const stock of latestStocks.values()) {
+      totalStock += Number(stock) || 0;
+    }
     const dailyBurn = totalStock * 0.05; // Simulate a 5% daily depletion rate for all assets
     
     for (let i = 0; i < 14; i++) {
@@ -61,7 +70,7 @@ async function getPredictiveInsights(req, res) {
     // 4. Return bundled analytics
     res.json({
         station,
-        inventory_count: items.length,
+        inventory_count: latestStocks.size,
         pending_requisitions: requisitions.length,
         projected_burn_rate: burnRateData,
         transport_viability: mlPrediction
