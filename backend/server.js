@@ -724,8 +724,8 @@ app.get('/api/v1/ml/predict-window', async (req, res) => {
 
 app.get('/api/v1/inventory', async (req, res) => {
   try {
-    const items = await Item.find();
-    return res.json(items.map(i => ({ ...i, qty: i.quantity })));
+    const items = await Item.find().lean();
+    return res.json(items.map(i => ({ ...i, id: i.item_id || i._id, qty: i.quantity })));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 app.post('/api/v1/inventory', async (req, res) => {

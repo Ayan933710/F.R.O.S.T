@@ -180,7 +180,7 @@ export default function CommanderInventory() {
   }, [items, station]);
 
   useEffect(() => {
-    if (items.length === 0) {
+    if (items.length === 0 || (items.length > 0 && !items[0].name)) {
       fetch(`${API_V1}/inventory`)
         .then(res => res.json())
         .then(data => {
