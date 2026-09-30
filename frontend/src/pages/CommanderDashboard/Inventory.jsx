@@ -232,13 +232,29 @@ export default function CommanderInventory() {
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [newItemData, setNewItemData] = useState({ name: '', category: 'FUEL', qty: '', unit: '', warning: '', shelfNumber: '' });
 
-  const handleAddItemSubmit = (e) => {
+  const handleAddItemSubmit = async (e) => {
     e.preventDefault();
     const newItem = {
       ...newItemData,
       id: Date.now(),
       qty: Number(newItemData.qty)
     };
+    
+    try {
+      await fetch(`${API_V1}/inventory`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          item_id: `ITM-CST-${newItem.id}`,
+          name: newItem.name,
+          category: newItem.category,
+          quantity: newItem.qty,
+          unit: newItem.unit,
+          station: station
+        })
+      });
+    } catch (err) { console.error('Failed to sync new item to server', err); }
+
     setItems([newItem, ...items]);
     queueMovement(station, newItem, 0, newItem.qty);
     setIsAddItemModalOpen(false);
@@ -259,9 +275,13 @@ export default function CommanderInventory() {
     }
   };
 
-  const handleConfirmDelete = (e) => {
+  const handleConfirmDelete = async (e) => {
     e.preventDefault();
     if (deleteConfirmText === 'REMOVE' && itemToDelete) {
+      try {
+        await fetch(`${API_V1}/inventory/${itemToDelete.id}`, { method: 'DELETE' });
+      } catch (err) { console.error('Failed to delete item from server', err); }
+      
       queueMovement(station, itemToDelete, -itemToDelete.qty, 0, 'disposal');
       setItems(items.filter(item => item.id !== itemToDelete.id));
       setIsDeleteModalOpen(false);

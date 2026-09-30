@@ -731,6 +731,9 @@ app.get('/api/v1/inventory', async (req, res) => {
 app.post('/api/v1/inventory', async (req, res) => {
   try { const i = await Item.create(req.body); return res.json(i); } catch (e) { res.status(500).json({ error: e.message }); }
 });
+app.delete('/api/v1/inventory/:id', async (req, res) => {
+  try { await Item.findOneAndDelete({ item_id: req.params.id }); return res.json({ success: true }); } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
 app.get('/api/v1/requisitions', async (req, res) => {
   const station = req.query.station ? String(req.query.station).toLowerCase() : undefined;
