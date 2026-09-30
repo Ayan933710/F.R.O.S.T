@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+
   Activity,
   ArrowLeft,
   CloudRain,
@@ -35,7 +36,7 @@ function StationCard({ station, isSelected, onSelect }) {
         }
       })
       .catch(err => console.error('Failed to fetch live temp:', err));
-    
+
     return () => { active = false; };
   }, [station.id]);
 
@@ -45,11 +46,10 @@ function StationCard({ station, isSelected, onSelect }) {
     <button
       type="button"
       onClick={() => onSelect(station.id)}
-      className={`w-full h-full text-left bg-slate-900/70 border backdrop-blur-sm rounded-xl p-5 flex flex-col gap-5 transition-all duration-300 ease-out cursor-pointer ${
-        isSelected
+      className={`w-full h-full text-left bg-slate-900/70 border backdrop-blur-sm rounded-xl p-5 flex flex-col gap-5 transition-all duration-300 ease-out cursor-pointer ${isSelected
           ? 'border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.15)] -translate-y-0.5'
           : 'border-cyan-500/20 hover:border-cyan-500/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:-translate-y-0.5'
-      }`}
+        }`}
     >
       {/* Card Header */}
       <div className="flex items-start justify-between">
@@ -68,7 +68,7 @@ function StationCard({ station, isSelected, onSelect }) {
 
       {/* Metrics Section (Vertical Stack) */}
       <div className="flex flex-col gap-3 mt-auto">
-        
+
         {/* Row 1: Station Crew */}
         <div className="bg-slate-800/40 border border-slate-700/40 rounded-lg p-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -112,8 +112,8 @@ function StationCard({ station, isSelected, onSelect }) {
             </div>
           </div>
           <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-cyan-400 rounded-full transition-all duration-500" 
+            <div
+              className="h-full bg-cyan-400 rounded-full transition-all duration-500"
               style={{ width: `${station.power}%` }}
             />
           </div>
@@ -137,7 +137,7 @@ function DetailPanel({ station, onBack }) {
         if (station.id === 'maitri') { lat = -70.766; lon = 11.733; }
         else if (station.id === 'bharati') { lat = -69.400; lon = 76.200; }
         else if (station.id === 'himadri') { lat = 78.933; lon = 11.933; }
-        
+
         if (!lat || !lon) return;
 
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,visibility`;

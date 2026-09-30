@@ -27,7 +27,7 @@ function flushMovementQueue() {
       if (!movement) break;
 
       try {
-        const response = await fetch(`/inventory/movements`, {
+        const response = await fetch(`${API_V1}/inventory/movements`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(movement),
@@ -97,7 +97,7 @@ function InventoryCard({ item, onRemove, onAdjust }) {
   };
 
   return (
-    <motion.div 
+    <motion.div
       layout
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -105,7 +105,7 @@ function InventoryCard({ item, onRemove, onAdjust }) {
       transition={{ duration: 0.2 }}
       className="bg-[var(--bg-panel)] backdrop-blur-xl border border-[var(--border)] rounded-xl p-5 shadow-[var(--shadow-glass)] flex flex-col hover:border-[var(--border-hover)] transition-colors relative group"
     >
-      <button 
+      <button
         onClick={() => onRemove(item.id)}
         className="absolute top-4 right-4 p-2 rounded-full bg-[var(--bg-panel-raised)] text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 transition-opacity hover:text-[var(--critical)] hover:bg-[var(--critical)]/10 z-10"
         title="Remove Item"
@@ -120,7 +120,7 @@ function InventoryCard({ item, onRemove, onAdjust }) {
           <span className="text-[10px] font-bold tracking-widest text-[var(--text-secondary)] border border-[var(--border)] px-1.5 py-0.5 rounded-sm uppercase">SHELF: {item.shelfNumber}</span>
         )}
       </div>
-      
+
       <div className="flex items-baseline gap-2 mb-4">
         <span className="text-4xl font-black font-['Space_Grotesk'] text-[var(--text-primary)] tracking-tight">
           {item.qty.toLocaleString()}
@@ -141,9 +141,9 @@ function InventoryCard({ item, onRemove, onAdjust }) {
           <button onClick={() => handleAdjustDraft(10)} className="py-2 bg-[var(--bg-panel-raised)] border border-[var(--border)] rounded text-xs font-bold text-[var(--text-primary)] hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)] transition-colors">+ 10</button>
         </div>
         <div className="flex gap-2">
-          <input 
-            type="number" 
-            placeholder="Custom qty..." 
+          <input
+            type="number"
+            placeholder="Custom qty..."
             value={draftQty}
             onChange={(e) => setDraftQty(e.target.value)}
             className="flex-1 min-w-0 bg-[var(--bg-primary)] border border-[var(--border)] rounded px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors"
@@ -195,7 +195,7 @@ export default function CommanderInventory() {
     let active = true;
     const loadRunway = async () => {
       try {
-        const response = await fetch(`/inventory/forecast?station=${encodeURIComponent(station)}`);
+        const response = await fetch(`${API_V1}/inventory/forecast?station=${encodeURIComponent(station)}`);
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Could not load stock outlook');
         if (active) {
@@ -274,7 +274,7 @@ export default function CommanderInventory() {
     let active = true;
     const loadRequisitions = async () => {
       try {
-        const response = await fetch(`/requisitions?station=${encodeURIComponent(station)}`);
+        const response = await fetch(`${API_V1}/requisitions?station=${encodeURIComponent(station)}`);
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Could not load requisitions');
         if (active) {
@@ -319,15 +319,15 @@ export default function CommanderInventory() {
     e.preventDefault();
     const finalAsset = reqAsset === 'OTHER' ? customAsset : reqAsset;
     if (!finalAsset || !reqQty) return;
-    
+
     setSyncState('SYNCING');
     setRequisitionError('');
-    
+
     const matched = items.find(i => i.name === reqAsset);
     const unit = matched ? matched.unit : (reqAsset === 'OTHER' ? 'Units' : '');
-    
+
     try {
-      const response = await fetch(`/requisitions`, {
+      const response = await fetch(`${API_V1}/requisitions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ station, item: finalAsset, quantity: Number(reqQty), unit, urgency: reqUrgency }),
@@ -390,7 +390,7 @@ export default function CommanderInventory() {
 
   return (
     <div className="w-full h-full p-4 lg:p-8 overflow-y-auto font-['Work_Sans'] flex flex-col relative">
-      
+
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
@@ -410,11 +410,10 @@ export default function CommanderInventory() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                activeTab === tab 
-                  ? 'bg-[var(--accent-primary)] text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]' 
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${activeTab === tab
+                  ? 'bg-[var(--accent-primary)] text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]'
                   : 'bg-[var(--bg-panel)] text-[var(--text-secondary)] border border-[var(--border)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-panel-raised)]'
-              }`}
+                }`}
             >
               {tab}
             </button>
@@ -425,16 +424,16 @@ export default function CommanderInventory() {
         <div className="flex w-full lg:w-auto gap-3">
           <div className="relative flex-1 lg:w-64">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
-            <input 
-              type="text" 
-              placeholder="Search items..." 
+            <input
+              type="text"
+              placeholder="Search items..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-[var(--bg-panel)] border border-[var(--border)] rounded-lg pl-9 pr-4 py-2 text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent-primary)] shadow-[var(--shadow-glass)] transition-colors"
             />
           </div>
           {/* Restored Add Item Button */}
-          <button 
+          <button
             onClick={() => setIsAddItemModalOpen(true)}
             className="flex items-center gap-2 px-5 py-2 bg-[var(--bg-panel-raised)] text-[var(--text-primary)] border border-[var(--border)] hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)] rounded-lg text-sm font-bold transition-all shadow-[var(--shadow-glass)] shrink-0"
           >
@@ -447,9 +446,9 @@ export default function CommanderInventory() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8 shrink-0">
         <AnimatePresence>
           {filteredItems.length === 0 ? (
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               className="col-span-full py-16 flex flex-col items-center justify-center text-[var(--text-secondary)]"
             >
               <AlertCircle size={40} className="mb-4 opacity-50 text-[var(--accent-primary)]" />
@@ -458,11 +457,11 @@ export default function CommanderInventory() {
             </motion.div>
           ) : (
             filteredItems.map(item => (
-              <InventoryCard 
-                key={item.id} 
-                item={item} 
-                onRemove={handleRequestRemoveItem} 
-                onAdjust={handleAdjust} 
+              <InventoryCard
+                key={item.id}
+                item={item}
+                onRemove={handleRequestRemoveItem}
+                onAdjust={handleAdjust}
               />
             ))
           )}
@@ -498,16 +497,16 @@ export default function CommanderInventory() {
           BOTTOM SECTION: REQUEST ASSET BUTTON + LIFECYCLE LOG
           ────────────────────────────────────────────────────────── */}
       <div className="mt-auto grid grid-cols-1 xl:grid-cols-12 gap-6 shrink-0">
-        
+
         {/* Request Asset Action Area */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="col-span-1 xl:col-span-8 bg-[var(--bg-panel)] backdrop-blur-xl border border-[var(--border)] rounded-xl shadow-[var(--shadow-glass)] p-8 flex flex-col items-center justify-center min-h-[250px]"
         >
           <div className="text-center max-w-md">
             <h3 className="text-xl font-bold text-[var(--text-primary)] font-['Space_Grotesk'] mb-3">Official Station Requisition</h3>
-            <button 
+            <button
               onClick={() => setIsModalOpen(true)}
               className="w-full md:w-auto px-10 py-4 bg-gradient-to-b from-blue-500 to-blue-600 text-white hover:from-blue-400 hover:to-blue-500 border border-blue-400/30 rounded-xl text-base font-bold transition-all shadow-[var(--shadow-glass)] hover:scale-105 active:scale-95 flex items-center justify-center gap-3 mx-auto"
             >
@@ -517,7 +516,7 @@ export default function CommanderInventory() {
         </motion.div>
 
         {/* Status Lifecycle Log */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -527,7 +526,7 @@ export default function CommanderInventory() {
             <Clock size={16} /> Request Lifecycle Status
           </h3>
           {requisitionError && <p role="alert" className="mb-3 text-xs text-[var(--critical)]">{requisitionError}</p>}
-          
+
           <div className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
             <AnimatePresence>
               {reqHistory.length === 0 && (
@@ -537,7 +536,7 @@ export default function CommanderInventory() {
                 const ui = getStatusDisplay(req.status);
                 const Icon = ui.icon;
                 return (
-                  <motion.div 
+                  <motion.div
                     key={req.id}
                     layout
                     initial={{ opacity: 0, x: 20 }}
@@ -545,7 +544,7 @@ export default function CommanderInventory() {
                     className={`p-3 rounded-lg border ${ui.bg} flex flex-col gap-2 shadow-sm transition-colors duration-500`}
                   >
                     <div className="flex justify-between items-start">
-                      <span className="text-sm font-bold text-[var(--text-primary)] leading-tight">{req.qty} {req.unit} <br/><span className="text-[var(--text-secondary)] text-xs font-normal">{req.item}</span></span>
+                      <span className="text-sm font-bold text-[var(--text-primary)] leading-tight">{req.qty} {req.unit} <br /><span className="text-[var(--text-secondary)] text-xs font-normal">{req.item}</span></span>
                       <span className="text-[10px] font-mono text-[var(--text-secondary)] opacity-80">{req.time}</span>
                     </div>
                     <div className={`flex items-center gap-1.5 text-[11px] font-bold tracking-wide ${ui.color}`}>
@@ -584,23 +583,23 @@ export default function CommanderInventory() {
                 <h2 className="text-lg font-bold text-[var(--accent-primary)] font-['Space_Grotesk'] tracking-wide relative z-10">
                   Submit Official Station Requisition
                 </h2>
-                <button 
-                  onClick={() => setIsModalOpen(false)} 
+                <button
+                  onClick={() => setIsModalOpen(false)}
                   className="text-[var(--text-secondary)] hover:text-[var(--critical)] transition-colors relative z-10"
                 >
-                  <X size={20}/>
+                  <X size={20} />
                 </button>
               </div>
-              
+
               {/* Modal Body */}
               <form onSubmit={handleRequisition} className="p-6 flex flex-col gap-6">
-                
+
                 <div>
                   <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-widest">
                     Target Inventory Item
                   </label>
                   <div className="relative">
-                    <select 
+                    <select
                       value={reqAsset}
                       onChange={(e) => setReqAsset(e.target.value)}
                       className="w-full bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[var(--accent-primary)] transition-colors appearance-none shadow-inner cursor-pointer"
@@ -614,17 +613,17 @@ export default function CommanderInventory() {
                       <option value="OTHER">Other (Add New Asset)...</option>
                     </select>
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-secondary)]">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                     </div>
                   </div>
 
                   <AnimatePresence>
                     {reqAsset === 'OTHER' && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           required
-                          placeholder="Enter new asset name..." 
+                          placeholder="Enter new asset name..."
                           value={customAsset}
                           onChange={(e) => setCustomAsset(e.target.value)}
                           className="mt-3 w-full bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[var(--accent-primary)] transition-colors shadow-inner"
@@ -633,14 +632,14 @@ export default function CommanderInventory() {
                     )}
                   </AnimatePresence>
                 </div>
-                
+
                 <div>
                   <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-widest flex justify-between">
                     <span>Requested Quantity</span>
                     {derivedUnit && <span className="text-[var(--accent-primary)]">({derivedUnit.toUpperCase()})</span>}
                   </label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     required
                     min="1"
                     value={reqQty}
@@ -655,25 +654,23 @@ export default function CommanderInventory() {
                     Priority Level
                   </label>
                   <div className="flex gap-4">
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setReqUrgency('ROUTINE')}
-                      className={`flex-1 py-3 rounded-lg text-sm font-bold border transition-all duration-300 ${
-                        reqUrgency === 'ROUTINE' 
-                          ? 'bg-[var(--accent-primary)] text-white border-[var(--accent-primary)] shadow-[0_0_15px_rgba(59,130,246,0.3)]' 
+                      className={`flex-1 py-3 rounded-lg text-sm font-bold border transition-all duration-300 ${reqUrgency === 'ROUTINE'
+                          ? 'bg-[var(--accent-primary)] text-white border-[var(--accent-primary)] shadow-[0_0_15px_rgba(59,130,246,0.3)]'
                           : 'bg-[var(--bg-primary)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-panel)]'
-                      }`}
+                        }`}
                     >
                       ROUTINE
                     </button>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setReqUrgency('CRITICAL')}
-                      className={`flex-1 py-3 rounded-lg text-sm font-bold border transition-all duration-300 ${
-                        reqUrgency === 'CRITICAL' 
-                          ? 'bg-[var(--critical)] text-white border-[var(--critical)] shadow-[0_0_15px_rgba(225,29,72,0.3)]' 
+                      className={`flex-1 py-3 rounded-lg text-sm font-bold border transition-all duration-300 ${reqUrgency === 'CRITICAL'
+                          ? 'bg-[var(--critical)] text-white border-[var(--critical)] shadow-[0_0_15px_rgba(225,29,72,0.3)]'
                           : 'bg-[var(--bg-primary)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--critical)] hover:bg-[var(--critical)]/10 hover:border-[var(--critical)]/50'
-                      }`}
+                        }`}
                     >
                       CRITICAL
                     </button>
@@ -682,21 +679,20 @@ export default function CommanderInventory() {
 
                 {/* Footer */}
                 <div className="mt-2 pt-5 border-t border-[var(--border)] flex justify-end items-center gap-4">
-                  <button 
-                    type="button" 
-                    onClick={() => setIsModalOpen(false)} 
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
                     className="text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors px-4 py-2"
                   >
                     Cancel
                   </button>
-                  <button 
+                  <button
                     type="submit"
                     disabled={syncState !== 'IDLE'}
-                    className={`px-6 py-3 rounded-lg font-bold text-sm transition-all shadow-[var(--shadow-glass)] disabled:opacity-80 min-w-[200px] flex justify-center items-center ${
-                      syncState === 'QUEUED' 
-                        ? 'bg-[var(--ok)] text-white' 
+                    className={`px-6 py-3 rounded-lg font-bold text-sm transition-all shadow-[var(--shadow-glass)] disabled:opacity-80 min-w-[200px] flex justify-center items-center ${syncState === 'QUEUED'
+                        ? 'bg-[var(--ok)] text-white'
                         : 'bg-gradient-to-b from-[var(--accent-primary)] to-blue-600 hover:from-blue-400 hover:to-[var(--accent-primary)] text-white border border-blue-400/30'
-                    }`}
+                      }`}
                   >
                     {syncState === 'IDLE' ? 'Transmit Requisition' : (syncState === 'SYNCING' ? 'SYNCING...' : 'QUEUED')}
                   </button>
@@ -730,25 +726,25 @@ export default function CommanderInventory() {
                 <h2 className="text-lg font-bold text-[var(--ok)] font-['Space_Grotesk'] tracking-wide relative z-10">
                   Add Local Inventory Item
                 </h2>
-                <button 
-                  onClick={() => setIsAddItemModalOpen(false)} 
+                <button
+                  onClick={() => setIsAddItemModalOpen(false)}
                   className="text-[var(--text-secondary)] hover:text-[var(--critical)] transition-colors relative z-10"
                 >
-                  <X size={20}/>
+                  <X size={20} />
                 </button>
               </div>
-              
+
               {/* Modal Body */}
               <form onSubmit={handleAddItemSubmit} className="p-6 flex flex-col gap-6">
                 <div>
                   <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-widest">
                     Item Name
                   </label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     required
                     value={newItemData.name}
-                    onChange={(e) => setNewItemData({...newItemData, name: e.target.value})}
+                    onChange={(e) => setNewItemData({ ...newItemData, name: e.target.value })}
                     placeholder="e.g. Spare Battery Pack"
                     className="w-full bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[var(--ok)] transition-colors shadow-inner"
                   />
@@ -759,9 +755,9 @@ export default function CommanderInventory() {
                     <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-widest">
                       Category
                     </label>
-                    <select 
+                    <select
                       value={newItemData.category}
-                      onChange={(e) => setNewItemData({...newItemData, category: e.target.value})}
+                      onChange={(e) => setNewItemData({ ...newItemData, category: e.target.value })}
                       className="w-full bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[var(--ok)] transition-colors appearance-none shadow-inner cursor-pointer"
                     >
                       <option value="FUEL">FUEL</option>
@@ -774,11 +770,11 @@ export default function CommanderInventory() {
                     <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-widest">
                       Unit
                     </label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       required
                       value={newItemData.unit}
-                      onChange={(e) => setNewItemData({...newItemData, unit: e.target.value})}
+                      onChange={(e) => setNewItemData({ ...newItemData, unit: e.target.value })}
                       placeholder="e.g. Liters, Units"
                       className="w-full bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[var(--ok)] transition-colors shadow-inner"
                     />
@@ -790,12 +786,12 @@ export default function CommanderInventory() {
                     <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-widest">
                       Initial Quantity
                     </label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       required
                       min="0"
                       value={newItemData.qty}
-                      onChange={(e) => setNewItemData({...newItemData, qty: e.target.value})}
+                      onChange={(e) => setNewItemData({ ...newItemData, qty: e.target.value })}
                       placeholder="Enter amount..."
                       className="w-full bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[var(--ok)] transition-colors shadow-inner"
                     />
@@ -804,10 +800,10 @@ export default function CommanderInventory() {
                     <label className="block text-[10px] font-bold text-[var(--text-secondary)] mb-2 uppercase tracking-widest">
                       Shelf Number
                     </label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={newItemData.shelfNumber}
-                      onChange={(e) => setNewItemData({...newItemData, shelfNumber: e.target.value})}
+                      onChange={(e) => setNewItemData({ ...newItemData, shelfNumber: e.target.value })}
                       placeholder="e.g. TNK-04"
                       className="w-full bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-[var(--ok)] transition-colors shadow-inner"
                     />
@@ -816,14 +812,14 @@ export default function CommanderInventory() {
 
                 {/* Footer */}
                 <div className="mt-2 pt-5 border-t border-[var(--border)] flex justify-end items-center gap-4">
-                  <button 
-                    type="button" 
-                    onClick={() => setIsAddItemModalOpen(false)} 
+                  <button
+                    type="button"
+                    onClick={() => setIsAddItemModalOpen(false)}
                     className="text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors px-4 py-2"
                   >
                     Cancel
                   </button>
-                  <button 
+                  <button
                     type="submit"
                     className="px-6 py-3 rounded-lg font-bold text-sm transition-all shadow-[var(--shadow-glass)] bg-gradient-to-b from-[var(--ok)] to-green-600 hover:from-green-500 hover:to-[var(--ok)] text-white border border-green-400/30"
                   >
