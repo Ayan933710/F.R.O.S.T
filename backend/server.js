@@ -869,11 +869,14 @@ app.post('/api/v1/inventory/movements', async (req, res) => {
 app.get('/api/v1/inventory/forecast', async (req, res) => {
   const station = req.query.station ? String(req.query.station) : null;
   const databaseMovements = await InventoryMovement.find(station ? { station } : {}).sort({ recorded_at: 1 });
+  const activeItems = await Item.find(station ? { station } : {}).lean();
+  const activeItemIds = new Set(activeItems.map(i => i.item_id || String(i._id)));
 
   const now = Date.now();
   const lookbackStart = now - 90 * 24 * 60 * 60 * 1000;
   const grouped = new Map();
   for (const movement of databaseMovements) {
+    if (!activeItemIds.has(movement.item_id)) continue;
     const key = `${movement.station}\0${movement.item_id}`;
     let group = grouped.get(key);
     if (!group) {
