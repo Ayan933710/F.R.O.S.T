@@ -234,9 +234,10 @@ export default function CommanderInventory() {
 
   const handleAddItemSubmit = async (e) => {
     e.preventDefault();
+    const generatedId = `ITM-CST-${Date.now()}`;
     const newItem = {
       ...newItemData,
-      id: Date.now(),
+      id: generatedId,
       qty: Number(newItemData.qty)
     };
     
@@ -245,7 +246,7 @@ export default function CommanderInventory() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          item_id: `ITM-CST-${newItem.id}`,
+          item_id: newItem.id,
           name: newItem.name,
           category: newItem.category,
           quantity: newItem.qty,
