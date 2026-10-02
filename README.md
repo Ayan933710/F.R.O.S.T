@@ -2,7 +2,10 @@
   <h1>❄️ F.R.O.S.T</h1>
   <p><b>Polar Logistics Command</b></p>
   <p>Tactical logistics, cold-chain inventory tracking, and real-time research station monitoring for extreme environments.</p>
-  
+     <p>
+    <a href="http://16.4.33.1/"><strong>🌐 Live Website</strong></a> · 
+    <a href="[https://youtu.be/BvdNdUbJA_8]"><strong>🎥 Demo Video</strong></a>
+  </p>
   <div>
     <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
     <img src="https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" />
@@ -82,6 +85,7 @@ Create a `.env` file inside the `backend/` directory. You will need to provide y
 # backend/.env
 PORT=5000
 MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/frost?retryWrites=true&w=majority
+FRONTEND_URL=http://localhost:5173
 ```
 
 ### Step 2: Backend Initialization
