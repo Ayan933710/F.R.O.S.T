@@ -4,7 +4,7 @@
   <p>Tactical logistics, cold-chain inventory tracking, and real-time research station monitoring for extreme environments.</p>
      <p>
     <a href="http://16.4.33.1/"><strong>🌐 Live Website</strong></a> · 
-    <a href="[https://youtu.be/BvdNdUbJA_8]"><strong>🎥 Demo Video</strong></a>
+    <a href="https://youtu.be/BvdNdUbJA_8"><strong>🎥 Demo Video</strong></a>
   </p>
   <div>
     <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
