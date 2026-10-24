@@ -1,6 +1,6 @@
 <div align="center">
   <h1>❄️ F.R.O.S.T</h1>
-  <p><b>Polar Logistics Command</b></p>
+  <p><b>Frontier Routing & Operational Supply Tracking</b></p>
   <p>Tactical logistics, cold-chain inventory tracking, and real-time research station monitoring for extreme environments.</p>
      <p>
     <a href="http://16.4.33.1/"><strong>🌐 Live Website</strong></a> · 
@@ -18,6 +18,7 @@
 ---
 
 **F.R.O.S.T** (Federated Routing & Operational Supply Tracking) is a mission-critical logistics platform built to sustain extreme-environment polar research stations. From predicting localized cold-chain supply exhaustion to orchestrating high-stakes global manifests, F.R.O.S.T provides commanders with a real-time, zero-latency situational awareness dashboard. Designed with a stunning cyber-tactical aesthetic, the platform bridges cutting-edge telemetry tracking with robust inventory ledgers to ensure no researcher is left stranded.
+
 ## 🗺️ System Workflow & User Journey
 
 F.R.O.S.T is engineered for two primary operational profiles, ensuring streamlined communication between headquarters and the deep freeze:
@@ -26,6 +27,7 @@ F.R.O.S.T is engineered for two primary operational profiles, ensuring streamlin
 - **Station Commander (Field):** A hyper-localized, tactical view designed for extreme environments. Commanders monitor live sensor telemetry, track real-time local weather API feeds, manage active station rosters, and submit localized supply requisitions before critical items hit zero.
 
 ### The Logistics Lifecycle
+
 1. **Requisition Created:** A Station Commander identifies a critical shortfall (e.g., thermal generators) and issues a requisition.
 2. **Manifest Generated:** HQ approves the requisition, packing the items into a global transit manifest.
 3. **Deployed:** The cargo enters transit, tracked globally via the F.R.O.S.T ledger.
@@ -34,6 +36,7 @@ F.R.O.S.T is engineered for two primary operational profiles, ensuring streamlin
 ## ⚡ Comprehensive Feature Matrix
 
 ### Operational Capabilities
+
 - **Cold-Chain Inventory Tracking:** Precision monitoring of perishable and high-value equipment with automatic low-stock warnings.
 - **Role-Based Tactical Dashboards:** Distinct UX/UI flows for Global Admins and Station Commanders, maximizing cognitive focus.
 - **Active Personnel Rostering:** Live tracking of deployed scientists and crew complements assigned to each polar station.
@@ -41,6 +44,7 @@ F.R.O.S.T is engineered for two primary operational profiles, ensuring streamlin
 - **Offline-First Resilience:** Field commanders can manage inventory even when satellite links fail. The local dashboard queues movements and gracefully synchronizes with the AWS cloud ledger the moment connectivity is restored.
 
 ### Technical Engineering
+
 - **Strict Background Synchronization:** The React frontend automatically intercepts stale local storage and cross-references it with the master database on load, ensuring ghost items are eradicated and all field laptops stay perfectly aligned.
 - **Event-Sourced Inventory Ledger:** The backend utilizes an immutable `InventoryMovement` log to dynamically calculate aggregate stock levels and predictive burn rates, bypassing static legacy data for 100% live analytics.
 - **MongoDB Aggregation Pipelines:** Highly optimized database queries that dynamically calculate cross-station metrics and active rosters.
@@ -71,14 +75,16 @@ F.R.O.S.T/
 
 ## 🛠️ Zero-to-Hero Local Setup Guide
 
-Follow this sequential setup to deploy F.R.O.S.T flawlessly on your local machine. 
+Follow this sequential setup to deploy F.R.O.S.T flawlessly on your local machine.
 
-**Prerequisites:** 
+**Prerequisites:**
+
 - Node.js (v18+)
 - Python (v3.10+)
 - Git
 
 ### Step 1: Environment Configuration
+
 Create a `.env` file inside the `backend/` directory. You will need to provide your MongoDB Atlas connection string.
 
 ```bash
@@ -89,6 +95,7 @@ FRONTEND_URL=http://localhost:5173
 ```
 
 ### Step 2: Backend Initialization
+
 Open a terminal, navigate to the backend, install the dependencies, and ignite the Express server.
 
 ```bash
@@ -98,6 +105,7 @@ npm run dev
 ```
 
 ### Step 3: Frontend Initialization
+
 Open a second terminal instance to deploy the Vite React application.
 
 ```bash
@@ -107,6 +115,7 @@ npm run dev
 ```
 
 ### Step 4: ML Service Initialization
+
 Open a third terminal instance to boot up the Python microservice.
 
 ```bash
@@ -136,6 +145,7 @@ F.R.O.S.T is backed by a robust MongoDB Atlas schema designed for supply chain i
 - **`Manifests`**: High-level cargo shipment ledgers for global transit.
 
 ### Primary Express Routes (`backend/server.js`)
+
 - `GET /api/v1/research-centers` : Hydrates the main F.R.O.S.T admin overview grid.
 - `GET /api/v1/research-centers/:id` : Deep-fetches station-specific analytics and calculates localized inventory metrics.
 - `GET /api/stations/:stationName/roster` : Performs regex aggregations on the `Users` collection to stream live personnel deployments.
